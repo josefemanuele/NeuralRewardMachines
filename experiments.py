@@ -35,7 +35,6 @@ def launch_experiments(path, formula, experiment, env_type, method):
         use_dfa_state = True
 
     env = GridWorldEnv(formula, "rgb_array", state_type=state_type, use_dfa_state=use_dfa_state, train=False)
-
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -45,12 +44,12 @@ def launch_experiments(path, formula, experiment, env_type, method):
 def main(argv):
     if not os.path.isdir(FLAGS.LOG_DIR):
         os.makedirs(FLAGS.LOG_DIR)
-    for formula_idx, formula in enumerate(formulas):
+    for formula_idx, formula in enumerate(formulas[-1:]):
         for experiment in range(FLAGS.NUM_EXPERIMENTS):
             print(f"Experiment {experiment} on formula {formula[2]}")
             path = FLAGS.LOG_DIR + str(formula[2])
 
-            launch_experiments(FLAGS.LOG_DIR, formula, experiment, FLAGS.ENV, FLAGS.METHOD)
+            launch_experiments(path, formula, experiment, FLAGS.ENV, FLAGS.METHOD)
         plot(path, FLAGS.NUM_EXPERIMENTS, formula, 100)
 
 
