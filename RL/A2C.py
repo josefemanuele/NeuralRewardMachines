@@ -23,10 +23,10 @@ max_episodes   = 10000
 rnn_outputs = 5
 
 # layers of rnn
-num_layers  = 1
+num_layers  = 2
 
 # hyper params:
-hidden_size = 32 #of a2c
+hidden_size = 64 #of a2c
 rnn_hidden_size = 50 #of rnn
 
 # slidind window
@@ -143,8 +143,8 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
         #first step with RNN or dfa
         if method == "rnn":
-            _, (h_0, c_0) = rnn(state.unsqueeze(0), h_0, c_0)
-            state = h_0
+            out, (h_0, c_0) = rnn(state.unsqueeze(0), h_0, c_0)
+            state = out
         #elif method == "vrm":
         #   ...fai uno step con VRM
 
@@ -182,8 +182,8 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
                 # first step with RNN or dfa
                 if method == "rnn":
-                    _, (h_0, c_0) = rnn(next_state.unsqueeze(0), h_0, c_0)
-                    next_state = h_0
+                    out, (h_0, c_0) = rnn(next_state.unsqueeze(0), h_0, c_0)
+                    next_state = out
                 # elif method == "vrm":
                 #   ...fai uno step con VRM
 
@@ -236,6 +236,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
         #EPISODIO FINITO
         episode_idx +=1
+
         if episode_idx % TT_policy == 0:
             log_probs_cat = torch.unsqueeze(log_probs_cat, dim=1)
             actor_loss = -(log_probs_cat * advantage_cat).mean()
