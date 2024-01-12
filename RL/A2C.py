@@ -82,12 +82,10 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
         model = ActorCritic(rnn_hidden_size, num_outputs, hidden_size).to(device)
     else:#"vrm" o "rm"
         model = ActorCritic(num_inputs + env.automaton.num_of_states, num_outputs, hidden_size).to(device)
-    model.double()
     params += list(model.parameters())
 
     if method == "rnn":
-        rnn=RNN(num_inputs, rnn_hidden_size, num_layers)
-        rnn.to(device)
+        rnn=RNN(num_inputs, rnn_hidden_size, num_layers).to(device)
         params += list(rnn.parameters())
     elif method == "vrm":
         f = open(path + "/sequence_classification_accuracy_" + str(experiment) + ".txt", "w")
@@ -158,7 +156,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             entropy = 0
             # rollout trajectory
             for _ in range(num_steps):
-                state = torch.tensor(state, dtype=torch.float32)
+                #state = torch.tensor(state, dtype=torch.float32)
                 state = torch.unsqueeze(state, 0)
 
                 state = state.to(device)
@@ -171,6 +169,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                 action = dist.sample()
 
                 next_state, reward, done, truncated, info = env.step(action.item())
+                next_state = torch.FloatTensor(next_state).to(device)
 
                 # if method == "rm":
                 #   ...dividi next_state in stato ambiente da stato dfa
@@ -183,7 +182,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
                 # first step with RNN or dfa
                 if method == "rnn":
-                    _, (h_0, c_0) = rnn(state.unsqueeze(0), h_0, c_0)
+                    _, (h_0, c_0) = rnn(next_state.unsqueeze(0), h_0, c_0)
                     next_state = h_0
                 # elif method == "vrm":
                 #   ...fai uno step con VRM
@@ -217,7 +216,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                 if done or truncated:
                     break
 
-            dist, next_value = model(state.double())
+            dist, next_value = model(next_state)
 
             returns = compute_returns(next_value, rewards, masks)
 
@@ -252,10 +251,11 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             #h_0 = h_0.detach()
 
         all_mean_rewards.append(np.sum(np.array(episode_rewards)))
+        all_mean_rewards_averaged.append(mean(all_mean_rewards[-slide_wind:]))
 
         if episode_idx % TTT == 0 and len(all_mean_rewards) >= 100:
             ## plot rewards
-            plt.plot([i for i in range(len(all_mean_rewards))], all_mean_rewards)
+            plt.plot([i for i in range(len(all_mean_rewards))], all_mean_rewards_averaged)
             plt.axhline(y=env.max_reward, color='r', linestyle='--')
             plt.xlabel("episode")
             plt.ylabel("mean episode rewards")
