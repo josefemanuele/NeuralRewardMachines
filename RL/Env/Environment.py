@@ -17,11 +17,11 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, formula, render_mode="human", state_type = "symbolic", use_dfa_state=True, train=True, size=4):
         self.dictionary_symbols = ['P', 'L', 'D', 'G', 'E' ]
-        self._PICKAXE = "imgs/pickaxe.png"
-        self._GEM = "imgs/gem.png"
-        self._DOOR = "imgs/door.png"
-        self._ROBOT = "imgs/robot.png"
-        self._LAVA = "imgs/lava.jpg"
+        self._PICKAXE = "RL/Env/imgs/pickaxe.png"
+        self._GEM = "RL/Env/imgs/gem.png"
+        self._DOOR = "RL/Env/imgs/door.png"
+        self._ROBOT = "RL/Env/imgs/robot.png"
+        self._LAVA = "RL/Env/imgs/lava.jpg"
 
         self._train = train
         self.use_dfa_state = use_dfa_state

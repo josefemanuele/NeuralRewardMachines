@@ -83,9 +83,11 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
     else:#"vrm" o "rm"
         model = ActorCritic(num_inputs + env.automaton.num_of_states, num_outputs, hidden_size).to(device)
     params += list(model.parameters())
+    model.double()
 
     if method == "rnn":
         rnn=RNN(num_inputs, rnn_hidden_size, num_layers).to(device)
+        rnn.double()
         params += list(rnn.parameters())
     elif method == "vrm":
         f = open(path + "/sequence_classification_accuracy_" + str(experiment) + ".txt", "w")
@@ -117,7 +119,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
     all_mean_rewards_averaged = []
     while episode_idx < max_episodes:
         obs, rew, info = env.reset()
-        state = torch.FloatTensor(obs).to(device)
+        state = torch.DoubleTensor(obs).to(device)
 
         if method == "rm":
             state_env = state[:2] 
@@ -133,8 +135,8 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
         if method == "rnn":
             # Initialize hidden and cell states
-            h_0 = torch.zeros(num_layers, rnn_hidden_size).to(device)
-            c_0 = torch.zeros(num_layers, rnn_hidden_size).to(device)
+            h_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
+            c_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
         elif method == "vrm":
             # initialize deep automa state
             state_automa = np.zeros(num_of_states)
@@ -142,7 +144,8 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             state_automa = torch.tensor(state_automa).to(device)
 
         if feature_extraction:
-           state = cnn(state.view(-1, 3, 64, 64))
+            state = cnn(state.view(-1, 3, 64, 64))
+            state = state.squeeze()
 
         #first step with RNN or dfa
         if method == "rnn":
@@ -172,7 +175,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                 action = dist.sample()
 
                 next_state, reward, done, truncated, info = env.step(action.item())
-                next_state = torch.FloatTensor(next_state).to(device)
+                next_state = torch.DoubleTensor(next_state).to(device)
 
                 # if method == "rm":
                 #   ...dividi next_state in stato ambiente da stato dfa
@@ -182,6 +185,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
                 if feature_extraction:
                    next_state = cnn(next_state.view(-1, 3, 64, 64))
+                   next_state = next_state.squeeze()
 
                 # first step with RNN or dfa
                 if method == "rnn":

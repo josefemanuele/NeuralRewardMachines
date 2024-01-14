@@ -23,7 +23,7 @@ def launch_experiments(path, formula, experiment, env_type, method):
     if env_type == 'map_env':
         state_type = "symbolic"
         feature_extraction = False
-    elif env_type == 'image':
+    elif env_type == 'image_env':
         state_type = "image"
         feature_extraction = True
 
@@ -34,7 +34,7 @@ def launch_experiments(path, formula, experiment, env_type, method):
     elif method == 'rm':
         use_dfa_state = True
 
-    env = GridWorldEnv(formula, "rgb_array", state_type=state_type, use_dfa_state=use_dfa_state, train=False)
+    env = GridWorldEnv(formula, "human", state_type=state_type, use_dfa_state=use_dfa_state, train=False)
     if not os.path.exists(path):
         os.makedirs(path)
 
