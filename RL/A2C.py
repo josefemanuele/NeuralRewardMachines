@@ -6,7 +6,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 from statistics import mean
 
-from .NN_models import ActorCritic, RNN
+from .NN_models import ActorCritic, RNN, Net
 from .VRM.VisualRewardMachine import VisualRewardMachine
 
 use_cuda = torch.cuda.is_available()
@@ -69,11 +69,11 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
     # size of the state vector
     params = []
     if feature_extraction:
-        #TODO
-        # initialize CNN for feat_extr
+        cnn = Net().to(device)
+        cnn.double()
         CNN_output_size = 16
         num_inputs = CNN_output_size
-        #params += list(CNN.parameters)
+        params += list(cnn.parameters())
     else:
         num_inputs = env.state_space_size
 
@@ -119,11 +119,12 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
         obs, rew, info = env.reset()
         state = torch.FloatTensor(obs).to(device)
 
-        # if method == "rm":
-        #   ...dividi stato ambiente da stato dfa
-        #   if feature extraction:
-        #       stato_env = cnn(stato_env)
-        #   stato = concat(stato_env, stato_dfa)
+        if method == "rm":
+            state_env = state[:2] 
+            state_dfa = state[-1]
+            if feature_extraction:
+                state_env = cnn(state_env.view(-1, 3, 64, 64))
+            state = torch.cat(state_env, state_dfa)
 
 
         episode_rewards = []
@@ -134,12 +135,14 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             # Initialize hidden and cell states
             h_0 = torch.zeros(num_layers, rnn_hidden_size).to(device)
             c_0 = torch.zeros(num_layers, rnn_hidden_size).to(device)
-        #elif method == "vrm":
-        #   # initialize deep automa state
+        elif method == "vrm":
+            # initialize deep automa state
+            state_automa = np.zeros(num_of_states)
+            state_automa[0] = 1.0
+            state_automa = torch.tensor(state_automa).to(device)
 
-
-        # if feature_extraction:
-        #    state = cnn(state)
+        if feature_extraction:
+           state = cnn(state.view(-1, 3, 64, 64))
 
         #first step with RNN or dfa
         if method == "rnn":
@@ -177,8 +180,8 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                 #       stato_env = cnn(stato_env)
                 #   next_state = concat(stato_env, stato_dfa)
 
-                # if feature_extraction:
-                #    next_state = cnn(next_state)
+                if feature_extraction:
+                   next_state = cnn(next_state.view(-1, 3, 64, 64))
 
                 # first step with RNN or dfa
                 if method == "rnn":
