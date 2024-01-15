@@ -78,6 +78,7 @@ class VisualRewardMachine:
         ])
 
         #queste cose sotto misà che servivano per fare la image classification
+        '''
         if dataset == 'minecraft_image':
             trace = []
             dir = os.listdir('custom_trace_whole')
@@ -88,6 +89,7 @@ class VisualRewardMachine:
             self.custom_trace = [torch.stack(trace).unsqueeze(0)]
 
             trace = []
+        '''
         if dataset == 'minecraft_location':
             self.custom_trace = [torch.tensor([[0,0],[0,1],[0,2],[0,3],
                                              [1,0],[1,1],[1,2],[1,3],
@@ -177,11 +179,11 @@ class VisualRewardMachine:
         print("training on {} sequences using {} automaton states".format(tot_size, self.numb_of_states))
 
         params = self.classifier.parameters()
-        if self.first_training:
-            optimizer = torch.optim.Adam(params, lr=0.1)#, weight_decay=1e-3)
-            self.first_training = False
-        else:
+        if self.dataset == "minecraft_location":
             optimizer = torch.optim.Adam(params, lr=0.005)#, weight_decay=1e-3)
+        else:
+            optimizer = torch.optim.Adam(params, lr=0.01)#, weight_decay=1e-3)
+
         sheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, min_lr=1e-05)
 
         epoch = 0
@@ -191,8 +193,8 @@ class VisualRewardMachine:
 
         for _ in range(num_of_epochs):
         #while True:
-            if epoch % 40 == 0:
-                print("epoch: ", epoch)
+            #if epoch % 40 == 0:
+            print("epoch: ", epoch)
             epoch+=1
             losses = []
 
@@ -229,7 +231,7 @@ class VisualRewardMachine:
 
             if mean_loss_new < 0.3 and abs(mean_loss_new - mean_loss) < 0.0001:
                 break
-            if epoch > 100 and abs(mean_loss_new - mean_loss) < 0.0001:
+            if epoch > num_of_epochs/2 and abs(mean_loss_new - mean_loss) < 0.0001:
                 break
             mean_loss = mean_loss_new
 
@@ -238,31 +240,24 @@ class VisualRewardMachine:
                 max_accuracy = train_accuracy
                 best_classifier = self.classifier
 
-            train_image_classification_accuracy, test_image_classification_accuracy = self.eval_image_classification()
+            if self.dataset == "minecraft_location":
+                train_image_classification_accuracy, test_image_classification_accuracy = self.eval_image_classification()
+            else:
+                train_image_classification_accuracy = 0
+                test_image_classification_accuracy = 0
             
-            if epoch % 40 == 0:
-                print("__________________________")
-                print("MEAN LOSS: ", mean_loss_new)
-                print("SEQUENCE CLASSIFICATION (DFA): train accuracy : {}\ttest accuracy : {}".format(train_accuracy, test_accuracy_hard))
-                print("IMAGE CLASSIFICATION: train accuracy : {}\ttest accuracy : {}".format(train_image_classification_accuracy,test_image_classification_accuracy))
-            '''
-            train_file.write("{}\n".format(train_accuracy))
-            test_hard_file.write("{}\n".format(test_accuracy_hard))
-            image_classification_train_file.write("{}\n".format(train_image_classification_accuracy))
-            image_classification_test_file.write("{}\n".format(test_image_classification_accuracy))
-            '''
+            #if epoch % 40 == 0:
+            print("__________________________")
+            print("MEAN LOSS: ", mean_loss_new)
+            print("SEQUENCE CLASSIFICATION (DFA): train accuracy : {}\ttest accuracy : {}".format(train_accuracy, test_accuracy_hard))
+            print("IMAGE CLASSIFICATION: train accuracy : {}\ttest accuracy : {}".format(train_image_classification_accuracy,test_image_classification_accuracy))
+
             mean_loss = mean_loss_new
             sheduler.step(mean_loss)
         #write the accuracies of the last epoch
 
         self.classifier = best_classifier    
-        
-        f = open("image_class_accuracy.txt", "a")
-        f.write(str(train_image_classification_accuracy) + "\n")
-        f.close()
-        f = open("dfa_accuracy.txt", "a")
-        f.write(str(train_accuracy) + "\n")
-        f.close()
+
 
     def train_DFA(self, batch_size, num_of_epochs, decay=0.999, freezed=False):
         def get_lr(optim):
