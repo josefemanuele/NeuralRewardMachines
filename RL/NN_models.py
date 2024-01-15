@@ -29,7 +29,7 @@ class ActorCritic(nn.Module):
         probs = self.actor(x)
         dist  = Categorical(probs)
         return dist, value
-
+'''
 class CNN_feature_extraction(nn.Module):
 
     def __init__(self, channels=3, output_dim=5, nodes_linear=4704):
@@ -49,7 +49,7 @@ class CNN_feature_extraction(nn.Module):
          x = self.cnn_encoder(x)
          return self.fully_connected(x)
     
-
+'''
 class Net(nn.Module):    
     def __init__(self):
         super(Net, self).__init__()
