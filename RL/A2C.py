@@ -26,7 +26,7 @@ rnn_outputs = 5
 num_layers  = 2
 
 # hyper params:
-hidden_size = 64 #of a2c
+hidden_size = 120 #of a2c
 rnn_hidden_size = 50 #of rnn
 
 # slidind window
@@ -329,7 +329,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             log_probs_cat = torch.unsqueeze(log_probs_cat, dim=1)
             actor_loss = -(log_probs_cat * advantage_cat).mean()
             critic_loss = advantage_cat.pow(2).mean()
-            loss = 0.3 * actor_loss + 0.5 * critic_loss - 0.01 * entropy
+            loss = 0.3 * actor_loss + 0.5 * critic_loss - 0.0001 * entropy
 
             optimizer.zero_grad()
             loss.backward(retain_graph=True)

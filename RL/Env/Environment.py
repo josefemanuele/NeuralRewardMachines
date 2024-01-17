@@ -25,7 +25,7 @@ class GridWorldEnv(gym.Env):
 
         self._train = train
         self.use_dfa_state = use_dfa_state
-        self.max_num_steps = 100
+        self.max_num_steps = 50
         self.curr_step = 0
 
         self.state_type = state_type

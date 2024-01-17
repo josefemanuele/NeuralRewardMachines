@@ -44,7 +44,7 @@ def launch_experiments(path, formula, experiment, env_type, method):
 def main(argv):
     if not os.path.isdir(FLAGS.LOG_DIR):
         os.makedirs(FLAGS.LOG_DIR)
-    for formula_idx, formula in enumerate(formulas):
+    for formula_idx, formula in enumerate(formulas[6:]):
         for experiment in range(FLAGS.NUM_EXPERIMENTS):
             print(f"Experiment {experiment} on formula {formula[2]}")
             path = FLAGS.LOG_DIR + str(formula[2])
