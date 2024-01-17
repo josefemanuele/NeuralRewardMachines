@@ -70,7 +70,7 @@ def plot_sequence(source_1, task_category, destination, num_exp):
                 with open("{}/sequence_classification_accuracy_{}.txt".format(path_1, exp), "r") as f:
                     lines_1 = f.readlines()
                 lines_1 = [float(line.strip()) for line in lines_1]
-                lines_1 = np.convolve(lines_1, np.ones(100)/100, mode='valid')
+                lines_1 = np.convolve(lines_1, np.ones(30)/30, mode='valid')
                 results_1.append(lines_1)
 
     results_1 = np.array(results_1)
