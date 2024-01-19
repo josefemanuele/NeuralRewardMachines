@@ -26,7 +26,7 @@ rnn_outputs = 5
 num_layers  = 2
 
 # hyper params:
-hidden_size = 120 #of a2c
+hidden_size = 64 #of a2c
 rnn_hidden_size = 50 #of rnn
 
 # slidind window
@@ -146,35 +146,35 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
     all_mean_rewards = []
     all_mean_rewards_averaged = []
     while episode_idx < max_episodes:
-        obs, reward, info = env.reset()
-        state = torch.DoubleTensor(obs).to(device)
-
-        if method == "rm":
-            state_env = state[:2] 
-            state_dfa = state[-1]
-            if feature_extraction:
-                state_env = cnn(state_env.view(-1, 3, 64, 64))
-            state = torch.cat(state_env, state_dfa)
-
-
         episode_rewards = []
         done = False
         truncated = False
+        obs, reward, info = env.reset()
 
-        if method == "rnn":
-            # Initialize hidden and cell states
-            h_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
-            c_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
-        elif method == "vrm":
-            # initialize deep automa state
-            state_automa = np.zeros( num_of_states)
-            state_automa[0] = 1.0
-            state_automa = torch.tensor(state_automa).to(device)
+        if method == "rm":
+            state_dfa = torch.DoubleTensor(obs[0]).to(device)
+            state_env = torch.DoubleTensor(obs[1]).to(device)
 
-        raw_state = state
-        if feature_extraction:
-            state = cnn(state.view(-1, 3, 64, 64))
-            state = state.squeeze()
+            if feature_extraction:
+                state_env = cnn(state_env.view(-1, 3, 64, 64))
+            state = torch.cat((state_env, state_dfa.unsqueeze(0)), 1).squeeze()
+        else:
+            state = torch.DoubleTensor(obs).to(device)
+
+            if method == "rnn":
+                # Initialize hidden and cell states
+                h_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
+                c_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
+            elif method == "vrm":
+                # initialize deep automa state
+                state_automa = np.zeros( num_of_states)
+                state_automa[0] = 1.0
+                state_automa = torch.tensor(state_automa).to(device)
+
+            raw_state = state
+            if feature_extraction:
+                state = cnn(state.view(-1, 3, 64, 64))
+                state = state.squeeze()
 
         #first step with RNN or dfa
         if method == "rnn":
@@ -219,34 +219,43 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                 action = dist.sample()
 
                 next_state, reward, done, truncated, info = env.step(action.item())
-                next_state = torch.DoubleTensor(next_state).to(device)
 
-                # if method == "rm":
-                #   ...dividi next_state in stato ambiente da stato dfa
-                #   if feature extraction:
-                #       stato_env = cnn(stato_env)
-                #   next_state = concat(stato_env, stato_dfa)
-                raw_state = next_state
-                if feature_extraction:
-                   next_state = cnn(next_state.view(-1, 3, 64, 64))
-                   next_state = next_state.squeeze()
+                if method == "rm":
+                    state_dfa = torch.DoubleTensor(next_state[0]).to(device)
+                    state_env = torch.DoubleTensor(next_state[1]).to(device)
 
-                # first step with RNN or dfa
-                if method == "rnn":
-                    out, (h_0, c_0) = rnn(next_state.unsqueeze(0), h_0, c_0)
-                    next_state = out
-                elif method == "vrm":
-                    state_grounding = grounder.classifier(raw_state.unsqueeze(0))
+                    if feature_extraction:
+                        state_env = cnn(state_env.view(-1, 3, 64, 64))
+                    next_state = torch.cat((state_env, state_dfa.unsqueeze(0)), 1).squeeze()
+                else:
+                    next_state = torch.DoubleTensor(next_state).to(device)
 
-                    next_state_automa, reward_automa = grounder.deepAutoma.step(state_automa, state_grounding, 1.0)
-                    state_automa = next_state_automa
+                    # if method == "rm":
+                    #   ...dividi next_state in stato ambiente da stato dfa
+                    #   if feature extraction:
+                    #       stato_env = cnn(stato_env)
+                    #   next_state = concat(stato_env, stato_dfa)
+                    raw_state = next_state
+                    if feature_extraction:
+                       next_state = cnn(next_state.view(-1, 3, 64, 64))
+                       next_state = next_state.squeeze()
 
-                    next_state = torch.cat((next_state.unsqueeze(0), next_state_automa), dim=-1)
-                    next_state = state.squeeze()
+                    # first step with RNN or dfa
+                    if method == "rnn":
+                        out, (h_0, c_0) = rnn(next_state.unsqueeze(0), h_0, c_0)
+                        next_state = out
+                    elif method == "vrm":
+                        state_grounding = grounder.classifier(raw_state.unsqueeze(0))
 
-                    curr_traj.append(raw_state)
-                    curr_rew.append(reward)
-                    curr_info.append(info)
+                        next_state_automa, reward_automa = grounder.deepAutoma.step(state_automa, state_grounding, 1.0)
+                        state_automa = next_state_automa
+
+                        next_state = torch.cat((next_state.unsqueeze(0), next_state_automa), dim=-1)
+                        next_state = state.squeeze()
+
+                        curr_traj.append(raw_state)
+                        curr_rew.append(reward)
+                        curr_info.append(info)
 
                 state = next_state
 
@@ -329,7 +338,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             log_probs_cat = torch.unsqueeze(log_probs_cat, dim=1)
             actor_loss = -(log_probs_cat * advantage_cat).mean()
             critic_loss = advantage_cat.pow(2).mean()
-            loss = 0.3 * actor_loss + 0.5 * critic_loss - 0.0001 * entropy
+            loss = 0.3 * actor_loss + 0.5 * critic_loss - 0.01 * entropy
 
             optimizer.zero_grad()
             loss.backward(retain_graph=True)
@@ -343,9 +352,9 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             if episode_idx % TT_grounder == 0:
                 worst_trajectories, worst_related_info = prepare_dataset(sequence_accuracy[-TT_grounder:], image_traj,
                                                                          info_traj, TT_grounder)
-                grounder.set_dataset(worst_trajectories, worst_related_info)
+                #grounder.set_dataset(worst_trajectories, worst_related_info)
 
-                grounder.train_symbol_grounding(grounder_epochs)
+                #grounder.train_symbol_grounding(grounder_epochs)
 
                 image_traj = []
                 rew_traj = []
