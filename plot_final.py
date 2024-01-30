@@ -68,7 +68,7 @@ def triple_plot(source_1, source_2, source_3, task_category, destination, num_ex
     env = GridWorldEnv(formulas[0], "rgb_array", "symbolic", use_dfa_state=False, train=False)
     max_reward = env.max_reward
 
-    title_count = 0
+    title_count = 1
     for idx, formula in enumerate(formulas):
         if idx in task_category:
             print(formula[2])
@@ -119,13 +119,13 @@ def triple_plot(source_1, source_2, source_3, task_category, destination, num_ex
             sns.lineplot(x="variable", y="value", data=df2, label = "RNN+A2C")
             sns.lineplot(x="variable", y="value", data=df3, label = "RM+A2C")
 
-            plt.title(f"Map enviroment, task{title_count}", fontsize=17)
+            plt.title(f"Image enviroment, task{title_count}", fontsize=17)
             plt.axhline(y=max_reward, color='r', linestyle='--')
             plt.tick_params(axis='both', which='both', labelsize=12)
             plt.xlabel("Episodes", fontsize=17)
             plt.ylabel("Rewards", fontsize=17)
             plt.legend(loc = "lower right", fontsize=16)
-            plt.savefig(destination+f"/task{title_count}_nrm_vs_rnn_vs_rm_map.png")
+            plt.savefig(destination+f"/task{title_count}_nrm_vs_rnn_vs_rm_image.png")
             plt.clf()
 
             title_count+=1
@@ -167,9 +167,9 @@ def plot_sequence(source_1, task_category, destination, num_exp):
     plt.savefig(destination+"/second_class_sequence_classification_image.png")
     plt.clf()
 
-SOURCE_PATH_RNN = "Results/RNN_MAP/"
-SOURCE_PATH_GROUND = "Results/GROUNDED_MAP"
-SOURCE_PATH_RM = "Results/RM_MAP"
+SOURCE_PATH_RNN = "Results/RNN_CNN/"
+SOURCE_PATH_GROUND = "Results/GROUNDED_CNN"
+SOURCE_PATH_RM = "Results/RM_CNN"
 DESTINATION_PATH = "Plots/Single_Tasks"
 
 TASKS = [0, 1, 2, 4, 6, 7, 8, 9]
