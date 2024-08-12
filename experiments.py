@@ -1,4 +1,4 @@
-from new_LTL_tasks import formulas
+from LTL_tasks import formulas
 import absl.flags
 import absl.app
 import os

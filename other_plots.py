@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
-from new_LTL_tasks import formulas
+from LTL_tasks import formulas
 from RL.Env.Environment import GridWorldEnv
 
 def pad_list(lst, l):
