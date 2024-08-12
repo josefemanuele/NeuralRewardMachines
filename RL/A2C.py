@@ -106,7 +106,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
         rnn=RNN(num_inputs, rnn_hidden_size, num_layers).to(device)
         rnn.double()
         params += list(rnn.parameters())
-    elif method == "vrm":
+    elif method == "nrm":
         f = open(path + "/sequence_classification_accuracy_" + str(experiment) + ".txt", "w")
         f.close()
         f = open(path + "/image_classification_accuracy_" + str(experiment) + ".txt", "w")
@@ -165,7 +165,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                 # Initialize hidden and cell states
                 h_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
                 c_0 = torch.zeros(num_layers, rnn_hidden_size).to(device).double()
-            elif method == "vrm":
+            elif method == "nrm":
                 # initialize deep automa state
                 state_automa = np.zeros( num_of_states)
                 state_automa[0] = 1.0
@@ -180,7 +180,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
         if method == "rnn":
             out, (h_0, c_0) = rnn(state.unsqueeze(0), h_0, c_0)
             state = out
-        elif method == "vrm":
+        elif method == "nrm":
             state_grounding = grounder.classifier(raw_state.unsqueeze(0))
             next_state_automa, reward_automa = grounder.deepAutoma.step(state_automa.unsqueeze(0), state_grounding, 1.0)
             state_automa = next_state_automa
@@ -196,7 +196,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             masks = []
             entropy = 0
 
-            if method == "vrm":
+            if method == "nrm":
                 curr_traj = []
                 curr_rew = []
                 curr_info = []
@@ -211,7 +211,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
 
                 state = state.to(device)
 
-                #elif method == "vrm":
+                #elif method == "nrm":
                 #    grounder..
                 #    deep_automa
 
@@ -244,7 +244,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
                     if method == "rnn":
                         out, (h_0, c_0) = rnn(next_state.unsqueeze(0), h_0, c_0)
                         next_state = out
-                    elif method == "vrm":
+                    elif method == "nrm":
                         state_grounding = grounder.classifier(raw_state.unsqueeze(0))
 
                         next_state_automa, reward_automa = grounder.deepAutoma.step(state_automa, state_grounding, 1.0)
@@ -309,7 +309,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
         all_mean_rewards.append(np.sum(np.array(episode_rewards)))
         all_mean_rewards_averaged.append(mean(all_mean_rewards[-slide_wind:]))
 
-        if method == "vrm":
+        if method == "nrm":
             # calcolare le accuracy su curr_tray curr_info e scriverla su un file
             curr_traj_t = torch.stack(curr_traj).unsqueeze(0)
             curr_info_t = torch.LongTensor(curr_info).unsqueeze(0)
@@ -348,7 +348,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             advantage_cat = torch.tensor([]).to(device)
             #h_0 = h_0.detach()
 
-        if method == "vrm":
+        if method == "nrm":
             if episode_idx % TT_grounder == 0:
                 worst_trajectories, worst_related_info = prepare_dataset(sequence_accuracy[-TT_grounder:], image_traj,
                                                                          info_traj, TT_grounder)
