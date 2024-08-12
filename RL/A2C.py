@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from statistics import mean
 
 from .NN_models import ActorCritic, RNN, Net
-from .VRM.VisualRewardMachine import VisualRewardMachine
-from .VRM.utils import eval_acceptance
+from .NRM.NeuralRewardMachine import NeuralRewardMachine
+from .NRM.utils import eval_acceptance
 use_cuda = torch.cuda.is_available()
 device   = torch.device("cuda" if use_cuda else "cpu")
 print(device)
@@ -73,7 +73,7 @@ def prepare_dataset(sequence_accuracy, image_trajectory, info_trajectory, TT):
 def recurrent_A2C(env, path, experiment, method, feature_extraction):
     #recurrency =
     #       - 'rnn'     (rnn+A2C)
-    #       - 'vrm'     (grounding+A2C)
+    #       - 'nrm'     (grounding+A2C)
     #       - 'rm'    (reward machines)
 
     #################### reinitialize files
@@ -97,7 +97,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
     # Initializing the Actor critic model
     if method == "rnn":
         model = ActorCritic(rnn_hidden_size, num_outputs, hidden_size).to(device)
-    else:#"vrm" o "rm"
+    else:#"nrm" o "rm"
         model = ActorCritic(num_inputs + env.automaton.num_of_states, num_outputs, hidden_size).to(device)
     params += list(model.parameters())
     model.double()
@@ -117,7 +117,7 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             dataset = "minecraft_location"
         elif env.state_type == "image":
             dataset = "minecraft_image"
-        grounder = VisualRewardMachine(num_of_states, num_of_symbols, num_automaton_outputs, num_exp=experiment,
+        grounder = NeuralRewardMachine(num_of_states, num_of_symbols, num_automaton_outputs, num_exp=experiment,
                                        log_dir=path, dataset=dataset)
         grounder.deepAutoma.initFromDfa(transition_function, automaton_rewards)
         grounder.deepAutoma.double()

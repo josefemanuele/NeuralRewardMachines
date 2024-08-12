@@ -2,7 +2,7 @@ from new_LTL_tasks import formulas
 import absl.flags
 import absl.app
 import os
-from RL.VRM.utils import set_seed
+from RL.NRM.utils import set_seed
 from RL.Env.Environment import GridWorldEnv
 from RL.A2C import recurrent_A2C
 from plot import plot

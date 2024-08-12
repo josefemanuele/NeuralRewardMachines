@@ -32,7 +32,7 @@ def create_batches_same_length(dataset, labels, size):
         new_labels.append(batch_label)
     return new_dataset, new_labels 
 
-class VisualRewardMachine:
+class NeuralRewardMachine:
     def __init__(self, numb_states, numb_symbols, numb_rewards, num_exp=0,log_dir="Results/", dataset="minecraft_location"):
         self.first_training = False
         self.ltl_formula_string = "goal"
