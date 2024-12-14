@@ -2,40 +2,6 @@ import sys
 from itertools import product
 import datetime
 
-def find_reasoning_shurtcuts(phi, max_iter, criterion= "acceptance", pruning_maps = True):
-    #Criterion may be one between:
-    # "acceptance" = wether traces remain accepted after the symbols modifications
-    # "reward" = if the traces receive or not the same reward after symbol modifications
-
-    # phi = Moore Machine
-    #TODO: calculate max_iter
-    if pruning_maps:
-        iter = 1
-    else:
-        iter = max_iter
-
-    alphas = set(product(phi.alphabet, repeat= len(phi.alphabet)))
-    data = set(product(phi.alphabet, repeat = iter))
-    #print(alphas)
-    start_time = datetime.datetime.now()
-    while iter <= max_iter:
-        print("#### Iteration ", iter)
-        print("number of maps = {}".format( len(alphas)))
-        print("number of traces = {}".format(len(data)))
-        alphas_for = alphas.copy()
-        for alpha in alphas_for:
-            survive = check_alpha(data, alpha, phi, criterion)
-            if not survive:
-                alphas.remove(alpha)
-        iter += 1
-        data = set(product(phi.alphabet, repeat = iter))
-
-    end_time = datetime.datetime.now()
-    time_diff = (end_time - start_time)
-    execution_time = time_diff.total_seconds()
-
-    return alphas, execution_time
-
 def check_alpha(dataset, alpha, phi, criterion):
     for trace in dataset:
         trace = list(trace)
@@ -54,37 +20,11 @@ def check_alpha(dataset, alpha, phi, criterion):
 
 
 def substitute_map(trace, alpha):
-    #trace = str(trace)
-
-    #print(trace)
-    #print(alpha)
     return list(map(lambda item: alpha[item], trace))
-    #print("new trace: ", trace)
-    #for i, rep in enumerate(alpha):
-    #    trace = trace.replace(i, rep)
-    #    print(trace)
-#test
-#find_reasoning_shurtcuts("phi", [0,1,2,3,4])
 
-'''
-def find_reasoning_shortcuts_NEW(phi):
-    # phi = Moore Machine
-    alphas = set(product(phi.alphabet, repeat= len(phi.alphabet)))
 
-    D = {}
 
-    for alpha in alphas:
-        D[alpha] = phi.alphabet.copy()
-
-    #print(D)
-    empty_key = (D.keys() == [])
-    while not empty_key:
-        next_D = {}
-        for alpha in D.keys().copy():
-            if check_alpha(D[alpha], alpha, phi, "acceptance"):
-'''
-
-def find_reasoning_shortcuts_NEW(phi):
+def find_reasoning_shortcuts(phi):
     start_time = datetime.datetime.now()
 
     if -100 in phi.rewards:
