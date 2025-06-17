@@ -352,9 +352,9 @@ def recurrent_A2C(env, path, experiment, method, feature_extraction):
             if episode_idx % TT_grounder == 0:
                 worst_trajectories, worst_related_info = prepare_dataset(sequence_accuracy[-TT_grounder:], image_traj,
                                                                          info_traj, TT_grounder)
-                #grounder.set_dataset(worst_trajectories, worst_related_info)
+                grounder.set_dataset(worst_trajectories, worst_related_info)
 
-                #grounder.train_symbol_grounding(grounder_epochs)
+                grounder.train_symbol_grounding(grounder_epochs)
 
                 image_traj = []
                 rew_traj = []
