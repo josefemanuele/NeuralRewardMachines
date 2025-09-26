@@ -11,7 +11,7 @@ from plot import plot
 absl.flags.DEFINE_string("METHOD", "rnn", "Method to test, one in ['rnn', 'nrm', 'rm'], default= 'rnn' ")
 absl.flags.DEFINE_string("ENV", "map_env", "Environment to test, one in ['map_env', 'image_env'], default= 'map_env' ")
 absl.flags.DEFINE_string("LOG_DIR", "Results/", "path where to save the results, default='Results/'")
-absl.flags.DEFINE_integer("NUM_EXPERIMENTS", 5, "num of runs for each test, default= 5")
+absl.flags.DEFINE_integer("NUM_EXPERIMENTS", 1, "num of runs for each test, default= 5")
 
 
 FLAGS = absl.flags.FLAGS

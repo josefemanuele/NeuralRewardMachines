@@ -16,7 +16,7 @@ torch.autograd.set_detect_anomaly(True)
 
 
 # max number of episodes
-max_episodes   = 10000
+max_episodes = 1000 #10000
 
 
 # output of rnn
