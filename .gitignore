@@ -3,6 +3,8 @@ RL/NRM/__pycache__/
 RL/__pycache__/
 __pycache__/
 **.venv
+**.DS_Store
+*.code-workspace
 journal.txt
 questions.txt
 Results/
