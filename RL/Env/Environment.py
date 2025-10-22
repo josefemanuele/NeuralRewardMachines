@@ -23,6 +23,7 @@ class GridWorldEnv(gym.Env):
         self._ROBOT = "RL/Env/imgs/robot.png"
         self._LAVA = "RL/Env/imgs/lava.jpg"
 
+        # Tell if we are training
         self._train = train
         self.use_dfa_state = use_dfa_state
         self.max_num_steps = 50
@@ -38,6 +39,7 @@ class GridWorldEnv(gym.Env):
         self.window = None
         self.clock = None
         self.formula = formula
+        # Creating MooreMachine with LTL formula str, number of symbols int, textual description str
         self.automaton = MooreMachine(self.formula[0], self.formula[1], self.formula[2], dictionary_symbols=self.dictionary_symbols)
 
         self.max_reward = 100 
@@ -68,6 +70,7 @@ class GridWorldEnv(gym.Env):
             3: np.array([-1, 0]),  # LEFT
         }
 
+        # Hardcode locations of objects
         self._gem_location = np.array([0, 3])
         self._pickaxe_location = np.array([1, 1])
         self._exit_location = np.array([3, 0])
@@ -203,6 +206,7 @@ class GridWorldEnv(gym.Env):
 
         return observation, reward, done, truncated, info#, sym
 
+    # if self.render_mode == "human": (?)
     def render(self):
         if self.render_mode == "rgb_array":
             return self._render_frame()

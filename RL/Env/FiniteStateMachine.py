@@ -8,6 +8,7 @@ from itertools import product
 
 class DFA:
 
+  # Initialize DFA from a str, int, or dict.
   def __init__(self, arg1, arg2, arg3, dictionary_symbols = None):
       if dictionary_symbols == None:
           self.dictionary_symbols = list(range(self.num_of_symbols))
@@ -171,12 +172,14 @@ class DFA:
 class MooreMachine(DFA):
     def __init__(self, arg1, arg2, arg3, reward = "distance", dictionary_symbols = None):
         super().__init__(arg1, arg2, arg3, dictionary_symbols)
+        # Define rewards for each state
         self.rewards = [100 for _ in range(self.num_of_states)]
         if reward == "distance":
             for s in range(self.num_of_states):
                 if self.acceptance[s]:
                     self.rewards[s] = 0
             #print(self.rewards)
+            # Compute the minimum distance from each state to an accepting state
             old_rew = self.rewards.copy()
             termination = False
             while not termination:
@@ -189,7 +192,8 @@ class MooreMachine(DFA):
 
                 termination = (str(self.rewards) == str(old_rew))
                 old_rew = self.rewards.copy()
-
+            #print("Distance from accepting states:", self.rewards)
+            # Normalize rewards between 0 and 100 (0 for accepting states, 100 for the farthest)
             for i in range(len(self.rewards)):
                 self.rewards[i] *= -1
             minimum = min([r for r in self.rewards if r != -100])
