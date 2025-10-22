@@ -9,15 +9,9 @@ from statistics import mean
 from .NN_models import ActorCritic, RNN, Net
 from .NRM.NeuralRewardMachine import NeuralRewardMachine
 from .NRM.utils import eval_acceptance
-use_cuda = torch.cuda.is_available()
-device   = torch.device("cuda" if use_cuda else "cpu")
-print(device)
-torch.autograd.set_detect_anomaly(True)
-
 
 # max number of episodes
 max_episodes = 1000 #10000
-
 
 # output of rnn
 rnn_outputs = 5
