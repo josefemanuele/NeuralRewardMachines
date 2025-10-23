@@ -102,21 +102,32 @@ class DQN(nn.Module):
             x = state.to(device).float().unsqueeze(0)
             return self.fc(x)
 
-
 def obs_to_state(obs, env: GridWorldEnv):
     # normalize/convert observation to tensors in the shape expected by DQN.forward
     if env.state_type == "symbolic":
-        # observation is a numpy array (x, y, maybe dfa)
-        if isinstance(obs, np.ndarray):
-            return torch.from_numpy(obs.astype(np.float32))
+        # If using DFA state we expect obs to contain the symbolic state and a one-hot/dfa part,
+        # or a single concatenated vector. Ensure the return has shape (obs_dim,)
+        if env.use_dfa_state:
+            # obs might be (state_vec, one_hot) or already concatenated array
+            if isinstance(obs, (tuple, list)) and len(obs) == 2:
+                state_vec, one_hot = obs
+                state_t = torch.tensor(np.array(state_vec).astype(np.float32))
+                one_hot_t = torch.tensor(np.array(one_hot).astype(np.float32))
+                return torch.cat([state_t, one_hot_t])
+            else:
+                arr = np.array(obs).astype(np.float32)
+                return torch.from_numpy(arr)
         else:
-            return torch.tensor(np.array(obs).astype(np.float32))
+            # simple numeric/vector observation
+            if isinstance(obs, np.ndarray):
+                return torch.from_numpy(obs.astype(np.float32))
+            else:
+                return torch.tensor(np.array(obs).astype(np.float32))
     else:
         # image mode: reset/step return either image only or [one_hot, image_tensor]
         if env.use_dfa_state:
             one_hot = obs[0]
             img = obs[1]
-            # one_hot might be list/np array; img may be torch tensor already
             one_hot_t = torch.tensor(np.array(one_hot).astype(np.float32))
             if not torch.is_tensor(img):
                 img_t = torch.tensor(np.array(img).astype(np.float32))
