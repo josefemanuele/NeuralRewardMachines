@@ -159,7 +159,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
         obs, _, _ = env.reset()
         ## Check obs and state format
         state = obs_to_state(obs, env)
-        print(obs, obs.__class__, state, state.__class__)  ## Print for debugging
+        print(ep, " ", obs, obs.__class__, state, state.__class__)  ## Print for debugging
         total_reward = 0.0
         done = False
         truncated = False
