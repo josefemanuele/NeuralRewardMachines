@@ -182,6 +182,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
             next_state = obs_to_state(next_obs, env)
             terminal = bool(done or truncated)
             buffer.push(state, action, reward, next_state, terminal)
+            print(action, next_obs, next_state, reward, terminal)  ## Print for debugging
 
             state = next_state
 
