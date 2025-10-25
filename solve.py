@@ -111,14 +111,14 @@ def obs_to_state(obs, env: GridWorldEnv):
         if env.use_dfa_state:
             # obs might be (state_vec, one_hot) or already concatenated array
             print("obs_to_state with dfa:", obs, obs.__class__, type(obs), obs.__len__())
-            if isinstance(obs, (tuple, list)) and len(obs) == 2:
-                state_vec, one_hot = obs
-                state_t = torch.tensor(np.array(state_vec).astype(np.float32))
-                one_hot_t = torch.tensor(np.array(one_hot).astype(np.float32))
-                return torch.cat([state_t, one_hot_t])
-            else:
-                arr = np.array(obs).astype(np.float32)
-                return torch.from_numpy(arr)
+            arr = np.array(obs)
+            pos_dim = env.state_space_size
+            pos = arr[:pos_dim].astype(np.float32)
+            idx = int(arr[pos_dim])
+            one_hot = np.zeros(env.automaton.num_of_states, dtype=np.float32)
+            one_hot[idx] = 1.0
+            state_vec = np.concatenate([pos, one_hot]).astype(np.float32)
+            return torch.as_tensor(state_vec, dtype=torch.float32, device=device)
         else:
             # simple numeric/vector observation
             if isinstance(obs, np.ndarray):
