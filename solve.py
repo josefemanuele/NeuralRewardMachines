@@ -110,6 +110,7 @@ def obs_to_state(obs, env: GridWorldEnv):
         # or a single concatenated vector. Ensure the return has shape (obs_dim,)
         if env.use_dfa_state:
             # obs might be (state_vec, one_hot) or already concatenated array
+            print("obs_to_state with dfa:", obs, obs.__class__, type(obs), obs.__len__())
             if isinstance(obs, (tuple, list)) and len(obs) == 2:
                 state_vec, one_hot = obs
                 state_t = torch.tensor(np.array(state_vec).astype(np.float32))
