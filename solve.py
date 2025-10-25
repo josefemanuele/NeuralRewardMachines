@@ -70,6 +70,7 @@ class DQN(nn.Module):
             obs_dim = env.state_space_size if isinstance(env.state_space_size, int) else int(np.prod(env.state_space_size))
             if self.use_dfa:
                 obs_dim += env.automaton.num_of_states
+            print("Symbolic DQN obs_dim:", obs_dim)
             self.fc = nn.Sequential(
                 nn.Linear(obs_dim, hidden),
                 nn.ReLU(),
@@ -173,7 +174,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
                 action = env.action_space.sample()
             else:
                 with torch.no_grad():
-                    print(obs, obs.__class__) ## Print for debugging
+                    print(state, state.__class__)  ## Print for debugging
                     qvals = online(state)
                     action = int(torch.argmax(qvals, dim=1).cpu().numpy()[0])
 
