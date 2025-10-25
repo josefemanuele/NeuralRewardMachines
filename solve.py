@@ -109,7 +109,6 @@ def obs_to_state(obs, env: GridWorldEnv):
         # or a single concatenated vector. Ensure the return has shape (obs_dim,)
         if env.use_dfa_state:
             # obs might be (state_vec, one_hot) or already concatenated array
-            print(obs, obs.__class__) ## Print for debugging
             if isinstance(obs, (tuple, list)) and len(obs) == 2:
                 state_vec, one_hot = obs
                 state_t = torch.tensor(np.array(state_vec).astype(np.float32))
@@ -173,6 +172,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
                 action = env.action_space.sample()
             else:
                 with torch.no_grad():
+                    print(obs, obs.__class__) ## Print for debugging
                     qvals = online(state)
                     action = int(torch.argmax(qvals, dim=1).cpu().numpy()[0])
 
