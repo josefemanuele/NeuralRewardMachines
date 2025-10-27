@@ -8,3 +8,4 @@ __pycache__/
 journal.txt
 questions.txt
 Results/
+*.pth
