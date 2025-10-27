@@ -70,7 +70,6 @@ class DQN(nn.Module):
             obs_dim = env.state_space_size if isinstance(env.state_space_size, int) else int(np.prod(env.state_space_size))
             if self.use_dfa:
                 obs_dim += env.automaton.num_of_states
-            print("Symbolic DQN obs_dim:", obs_dim)
             self.fc = nn.Sequential(
                 nn.Linear(obs_dim, hidden),
                 nn.ReLU(),
@@ -100,7 +99,9 @@ class DQN(nn.Module):
                 x = cnn_feat
             return self.fc(x)
         else:
-            x = state.to(device).float().unsqueeze(0)
+            x = state.to(device).float()
+            if x.dim() == 1:
+                x = x.unsqueeze(0)
             return self.fc(x)
 
 def obs_to_state(obs, env: GridWorldEnv):
@@ -160,7 +161,6 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
         obs, _, _ = env.reset()
         ## Check obs and state format
         state = obs_to_state(obs, env)
-        print(ep, " ", obs, obs.__class__, state, state.__class__)  ## Print for debugging
         total_reward = 0.0
         done = False
         truncated = False
@@ -174,7 +174,6 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
                 action = env.action_space.sample()
             else:
                 with torch.no_grad():
-                    print("Query network", state, state.__class__)  ## Print for debugging
                     qvals = online(state)
                     action = int(torch.argmax(qvals, dim=1).cpu().numpy()[0])
 
@@ -183,7 +182,6 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
             next_state = obs_to_state(next_obs, env)
             terminal = bool(done or truncated)
             buffer.push(state, action, reward, next_state, terminal)
-            print(action, next_obs, next_state, reward, terminal)  ## Print for debugging
 
             state = next_state
 
