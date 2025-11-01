@@ -31,8 +31,8 @@ class DFA:
       ltl_formula_parsed = parser(ltl_formula)
       dfa = ltl_formula_parsed.to_automaton()
       # print the automaton
-    #   graph = dfa.to_graphviz()
-    #   graph.render("symbolicDFAs/"+formula_name)
+      graph = dfa.to_graphviz()
+      graph.render("data/symbolicDFAs/"+formula_name)
 
       #From symbolic DFA to simple DFA
       print(dfa.__dict__)
@@ -62,6 +62,7 @@ class DFA:
       #print(self.transitions)
     #   self.write_dot_file("simpleDFAs/{}.dot".format(formula_name))
 
+  # Reduce the DFA obtained from pythomata library to a simple DFA with integer-labeled transitions
   def reduce_dfa(self, pythomata_dfa):
       dfa = pythomata_dfa
 
