@@ -4,6 +4,7 @@ import collections
 import argparse
 import math
 import time
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -15,6 +16,10 @@ import torch.optim as optim
 from RL.Env.Environment import GridWorldEnv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+out_folder = "data/"
+model_folder = "model/"
+log_folder = "log/"
 
 
 class ReplayBuffer:
@@ -157,6 +162,8 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
     steps_done = 0
     eps_start, eps_end, eps_decay = 1.0, 0.05, 30000
 
+    logfile = "training_log_" + datetime.now().strftime("%Y-%m-%d.%H:%M:%S") + ".csv"
+
     for ep in range(1, episodes + 1):
         obs, _, _ = env.reset()
         ## Check obs and state format
@@ -227,14 +234,20 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
 
         # simple logging
         if ep % 10 == 0:
-            print(f"Episode {ep:4d} | steps {steps_done:6d} | reward {total_reward:.2f} | epsilon {eps_threshold:.3f} | buffer {len(buffer)}")
+            line = f"Episode {ep:4d} | steps {steps_done:6d} | reward {total_reward:.2f} | epsilon {eps_threshold:.3f} | buffer {len(buffer)}"
+            print(line)
+            with open(out_folder + log_folder + logfile, "a") as logf_append:
+                logf_append.write(f"{ep},{steps_done},{total_reward:.2f},{eps_threshold:.3f},{len(buffer)}\n")
+
 
     # save model
-    torch.save(online.state_dict(), "dqn_gridworld.pth")
+    model_name = "DQN_" + datetime.now().strftime("%Y-%m-%d.%H:%M:%S") + ".pth"
+    torch.save(online.state_dict(), out_folder + model_folder + model_name)
     print("Training finished. Model saved to dqn_gridworld.pth")
 
 
 if __name__ == "__main__":
+    # Parse arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("--episodes", type=int, default=2000)
     parser.add_argument("--size", type=int, default=4)
@@ -243,6 +256,8 @@ if __name__ == "__main__":
     parser.add_argument("--use_dfa", action="store_true", default=True)
     args = parser.parse_args()
 
+    # Extend output folder name.
+    out_folder = out_folder + args.formula[2].replace(" ", "_") + "/"
     # Example: adapt the formula argument to the repository's expected format.
     # Here formula = (ltl_formula_str, num_symbols(int/string), formula_name)
     env = GridWorldEnv(formula=(args.formula[0], int(args.formula[1]), args.formula[2]),
