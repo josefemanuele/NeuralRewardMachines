@@ -133,6 +133,7 @@ class GridWorldEnv(gym.Env):
 
         return observation, reward, info
 
+    # Hardcode symbol to values.
     def _current_symbol(self):
         if (self._agent_location == self._exit_location).all():
             return 2
