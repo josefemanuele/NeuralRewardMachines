@@ -166,7 +166,6 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
 
     for ep in range(1, episodes + 1):
         obs, _, _ = env.reset()
-        ## Check obs and state format
         state = obs_to_state(obs, env)
         total_reward = 0.0
         done = False
@@ -184,6 +183,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
                     qvals = online(state)
                     action = int(torch.argmax(qvals, dim=1).cpu().numpy()[0])
 
+            # take step and store in buffer
             next_obs, reward, done, truncated, _ = env.step(action)
             total_reward += reward
             next_state = obs_to_state(next_obs, env)
