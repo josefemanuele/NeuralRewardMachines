@@ -3,8 +3,8 @@ import random
 import collections
 import argparse
 import math
-import time
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -163,6 +163,8 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
     eps_start, eps_end, eps_decay = 1.0, 0.05, 30000
 
     logfile = "training_log_" + datetime.now().strftime("%Y-%m-%d.%H:%M:%S") + ".csv"
+    # Ensure log directory exists
+    Path(out_folder + log_folder).mkdir(parents=True, exist_ok=True)
 
     for ep in range(1, episodes + 1):
         obs, _, _ = env.reset()
@@ -240,10 +242,11 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
                 logf_append.write(f"{ep},{steps_done},{total_reward:.2f},{eps_threshold:.3f},{len(buffer)}\n")
 
 
-    # save model
     model_name = "DQN_" + datetime.now().strftime("%Y-%m-%d.%H:%M:%S") + ".pth"
+    # Ensure model directory exists
+    Path(out_folder + model_folder).mkdir(parents=True, exist_ok=True)
+    # Save model
     torch.save(online.state_dict(), out_folder + model_folder + model_name)
-    print("Training finished. Model saved to dqn_gridworld.pth")
 
 
 if __name__ == "__main__":
