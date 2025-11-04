@@ -145,7 +145,7 @@ def obs_to_state(obs, env: GridWorldEnv):
             return img_t
 
 
-def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
+def train(env: GridWorldEnv, episodes=10000, batch_size=64, gamma=0.99, lr=1e-4,
           buffer_capacity=20000, target_update=1000, start_train=1000, max_steps_per_episode=200):
     ''' Train DQN agent in the given environment.'''
     online = DQN(env).to(device)
@@ -156,6 +156,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
 
     steps_done = 0
     eps_start, eps_end, eps_decay = 1.0, 0.05, 30000
+    reward_sum = 0.0
 
     model_name = "DQN.pth"
     logfile = "training_log.csv"
@@ -228,9 +229,10 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
             if terminal:
                 break
 
+        reward_sum += total_reward
         # simple logging
-        if ep % 10 == 0:
-            line = f"Episode {ep:4d} | steps {steps_done:6d} | reward {total_reward:.2f} | epsilon {eps_threshold:.3f} | buffer {len(buffer)}"
+        if ep % 100 == 0:
+            line = f"Episode {ep:4d} | steps {steps_done:6d} | steps/episode {steps_done/ep:2d.2f} | reward {total_reward:3d} | reward/episode {reward_sum/ep:3d.2f} | epsilon {eps_threshold:.3f} | buffer {len(buffer)}"
             print(line)
         with open(utils.log_folder + logfile, "a") as logf_append:
             logf_append.write(f"{ep},{steps_done},{total_reward:.2f},{eps_threshold:.3f},{len(buffer)}\n")
@@ -242,7 +244,7 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
 if __name__ == "__main__":
     # Parse arguments.
     parser = argparse.ArgumentParser()
-    parser.add_argument("--episodes", type=int, default=2000)
+    parser.add_argument("--episodes", type=int)
     parser.add_argument("--size", type=int, default=4)
     parser.add_argument("--formula", nargs=3)
     parser.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic")
@@ -252,6 +254,7 @@ if __name__ == "__main__":
 
     # Set formula.
     args.formula = utils.formula
+    args.episodes = 10000 if args.episodes is None else args.episodes
     # Set experiment output folder structure.
     utils.ensure_directories(args.formula[2])
 
