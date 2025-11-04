@@ -19,14 +19,6 @@ from RL.Env.Environment import GridWorldEnv
 
 import utils
 
-### TODO: Fix function to correctly estimate success.
-def safe_success_from_info(info, total_reward):
-    if not info:
-        return int(total_reward > 0)  # fallback: positive return => success
-    if isinstance(info, dict):
-        return int(bool(info.get("is_success") or info.get("success") or info.get("is_goal_reached")))
-    return int(total_reward > 0)
-
 def print_sample_execution(env: GridWorldEnv, model: DQN, max_steps: int):
     obs, _, _ = env.reset()
     state_tensor = obs_to_state(obs, env)
@@ -55,8 +47,7 @@ def print_sample_execution(env: GridWorldEnv, model: DQN, max_steps: int):
             print("Done:", done, "Truncated:", truncated)
             break
 
-    success = safe_success_from_info(info, total_reward)
-    print(f"Sample execution: steps={steps}, total_reward={total_reward:.2f}, success={success}")
+    print(f"Sample execution: steps={steps}, total_reward={total_reward:.2f}, success={done}")
 
 def evaluate(model_path: str, out_csv: str, runs: int, episodes: int, max_steps: int,
              env_kwargs: dict):
@@ -103,15 +94,15 @@ def evaluate(model_path: str, out_csv: str, runs: int, episodes: int, max_steps:
                     if done or truncated:
                         break
 
-                success = safe_success_from_info(info, total_reward)
-                writer.writerow([run, ep, steps, f"{total_reward:.4f}", success])
+                writer.writerow([run, ep, steps, f"{total_reward:.4f}", 1 if done else 0])
 
     # compute simple summary
     data = np.genfromtxt(str(out_csv), delimiter=",", names=True, dtype=None, encoding=None)
     rewards = np.array([float(x["total_reward"]) for x in data])
     successes = np.array([int(x["success"]) for x in data])
+    steps_array = np.array([int(x["steps"]) for x in data])
     print(f"Saved per-episode results to {out_csv}")
-    print(f"Overall episodes: {len(rewards)} | mean_reward: {rewards.mean():.3f} | success_rate: {successes.mean():.3f}")
+    print(f"Overall episodes: {len(rewards)} | steps/episode {steps_array.mean():.2f} | mean_reward: {rewards.mean():.2f} | success_rate: {successes.mean():.2f}")
 
     print_sample_execution(env, model, max_steps)
 
@@ -120,8 +111,8 @@ if __name__ == "__main__":
     p.add_argument("model", help="path to saved model .pth")
     p.add_argument("--out", default="eval_results.csv", help="output CSV file")
     p.add_argument("--runs", type=int, default=1, help="number of independent runs")
-    p.add_argument("--episodes", type=int, default=100, help="episodes per run")
-    p.add_argument("--max_steps", type=int, default=200, help="max steps per episode")
+    p.add_argument("--episodes", type=int, help="episodes per run")
+    p.add_argument("--max_steps", type=int, default=100, help="max steps per episode")
     p.add_argument("--size", type=int, default=4)
     p.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic")
     p.add_argument("--use_dfa", action="store_true", default=True)
@@ -130,6 +121,7 @@ if __name__ == "__main__":
 
     # Set formula.
     args.formula = utils.formula 
+    args.episodes = 1000 if args.episodes is None else args.episodes
 
     args.out = utils.get_eval_folder(args.model) + args.out
     env_kwargs = dict(
