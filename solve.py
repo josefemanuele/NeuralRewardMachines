@@ -3,8 +3,6 @@ import random
 import collections
 import argparse
 import math
-from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -15,12 +13,9 @@ import torch.optim as optim
 # Assumes Environment.GridWorldEnv is importable from RL.Env.Environment
 from RL.Env.Environment import GridWorldEnv
 
+import utils
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-out_folder = "data/"
-model_folder = "model/"
-log_folder = "log/"
-
 
 class ReplayBuffer:
     def __init__(self, capacity=10000):
@@ -152,7 +147,7 @@ def obs_to_state(obs, env: GridWorldEnv):
 
 def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
           buffer_capacity=20000, target_update=1000, start_train=1000, max_steps_per_episode=200):
-
+    ''' Train DQN agent in the given environment.'''
     online = DQN(env).to(device)
     target = DQN(env).to(device)
     target.load_state_dict(online.state_dict())
@@ -162,9 +157,8 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
     steps_done = 0
     eps_start, eps_end, eps_decay = 1.0, 0.05, 30000
 
-    logfile = "training_log_" + datetime.now().strftime("%Y-%m-%d.%H:%M:%S") + ".csv"
-    # Ensure log directory exists
-    Path(out_folder + log_folder).mkdir(parents=True, exist_ok=True)
+    model_name = "DQN.pth"
+    logfile = "training_log.csv"
 
     for ep in range(1, episodes + 1):
         obs, _, _ = env.reset()
@@ -238,15 +232,11 @@ def train(env: GridWorldEnv, episodes=1000, batch_size=64, gamma=0.99, lr=1e-4,
         if ep % 10 == 0:
             line = f"Episode {ep:4d} | steps {steps_done:6d} | reward {total_reward:.2f} | epsilon {eps_threshold:.3f} | buffer {len(buffer)}"
             print(line)
-            with open(out_folder + log_folder + logfile, "a") as logf_append:
-                logf_append.write(f"{ep},{steps_done},{total_reward:.2f},{eps_threshold:.3f},{len(buffer)}\n")
+        with open(utils.log_folder + logfile, "a") as logf_append:
+            logf_append.write(f"{ep},{steps_done},{total_reward:.2f},{eps_threshold:.3f},{len(buffer)}\n")
 
-
-    model_name = "DQN_" + datetime.now().strftime("%Y-%m-%d.%H:%M:%S") + ".pth"
-    # Ensure model directory exists
-    Path(out_folder + model_folder).mkdir(parents=True, exist_ok=True)
     # Save model
-    torch.save(online.state_dict(), out_folder + model_folder + model_name)
+    torch.save(online.state_dict(), utils.model_folder + model_name)
 
 
 if __name__ == "__main__":
@@ -254,13 +244,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--episodes", type=int, default=2000)
     parser.add_argument("--size", type=int, default=4)
-    parser.add_argument("--formula", nargs=3, default=["(F c0) & (F c1)", "2", "task0: visit(gem, door)"])
+    parser.add_argument("--formula", nargs=3)
     parser.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic")
     parser.add_argument("--use_dfa", action="store_true", default=True)
     args = parser.parse_args()
 
-    # Extend output folder name.
-    out_folder = out_folder + args.formula[2].replace(" ", "_") + "/"
+
+    # Set formula.
+    args.formula = utils.formula
+    # Set experiment output folder structure.
+    utils.ensure_directories(args.formula[2])
+
     # Example: adapt the formula argument to the repository's expected format.
     # Here formula = (ltl_formula_str, num_symbols(int/string), formula_name)
     env = GridWorldEnv(formula=(args.formula[0], int(args.formula[1]), args.formula[2]),
