@@ -16,4 +16,4 @@ formulas.append(("F(c0 & F(c1)) & G (! c2)", 3, "task9: seq_visit({0}, {1}) + gl
 formulas.append(("F(c0 & F(c1)) & G (! c2) & G(! c3)", 4, "task10: seq_visit({0}, {1}) + glob_av({2}) + glob_av({3})".format(*items)))
 
 # Sample formula.
-formula = ("(F c0) & (F c1)", 2, "task0: visit(gem, door)")
+formula = ("(F c0) & (F c1)", 2, "task0: visit(pickaxe, lava)")
