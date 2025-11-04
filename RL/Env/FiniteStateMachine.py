@@ -35,10 +35,10 @@ class DFA:
       graph.render("data/symbolicDFAs/"+formula_name)
 
       #From symbolic DFA to simple DFA
-      print(dfa.__dict__)
+      print("DFA dict:", dfa.__dict__)
       self.alphabet = ["c" + str(i) for i in range(num_symbols)]
       self.transitions = self.reduce_dfa(dfa)
-      print(self.transitions)
+      print("Transitions: ", self.transitions)
       self.num_of_states = len(self.transitions)
       self.acceptance = []
       for s in range(self.num_of_states):
@@ -46,7 +46,7 @@ class DFA:
               self.acceptance.append(True)
           else:
               self.acceptance.append(False)
-      #print(self.acceptance)
+      print("Acceptance: ", self.acceptance)
 
       #Complete the transition function with the symbols of the environment that ARE NOT in the formula
       self.num_of_symbols = len(dictionary_symbols)
@@ -59,7 +59,7 @@ class DFA:
                   if sym not in self.transitions[s].keys():
                       self.transitions[s][sym] = s
       #print("Complete transition function")
-      #print(self.transitions)
+      #print("Complete transitions: ", self.transitions)
     #   self.write_dot_file("simpleDFAs/{}.dot".format(formula_name))
 
   # Reduce the DFA obtained from pythomata library to a simple DFA with integer-labeled transitions
