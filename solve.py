@@ -356,6 +356,8 @@ if __name__ == "__main__":
     parser.add_argument("--use_dfa", action="store_true", default=True)
     args = parser.parse_args()
 
+    print(f"Using {device}.")
+
     # Train for all formulas in LTL_tasks.py
     for formula in formulas:
         dm.set_formula_name(formula[2])
