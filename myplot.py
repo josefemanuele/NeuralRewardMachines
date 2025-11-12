@@ -73,6 +73,7 @@ def plot(logfile, out=None, smooth=1):
 
     plt.tight_layout()
     plt.savefig(out)
+    plt.close()
     print(f"Saved plot to {out}")
 
 if __name__ == "__main__":
