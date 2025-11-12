@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-import utils
+from utils.DirectoryManager import DirectoryManager
 
 def moving_average(x, w=5):
     if w <= 1:
@@ -77,10 +77,14 @@ def plot(logfile, out=None, smooth=1):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("logfile", help="path to training log CSV (ep,steps,reward,epsilon,buffer_size)")
-    p.add_argument("--smooth", type=int, default=50, help="moving average window (int)")
+    p.add_argument("timestamp", help="timestamp of the experiment to plot")
+    p.add_argument("--smooth", type=int, default=10, help="moving average window (int)")
     args = p.parse_args()
 
-    #args.logfile = "data/task0:_visit(gem,_door)/log/training_log_2025-11-01.16:50:33.csv"
-    args.out = utils.get_plot_folder(args.logfile) + "learning_curve.png"
-    plot(args.logfile, args.out, smooth=args.smooth)
+    dm = DirectoryManager(args.timestamp)
+    for formula_name in dm.get_formula_names():
+        dm.set_formula_name(formula_name)
+        for log in dm.get_logs():
+            print(f"Plotting log: {log}")
+            out = dm.get_plot_folder() + f"plot_{log.stem}.png"
+            plot(log, out, smooth=args.smooth)

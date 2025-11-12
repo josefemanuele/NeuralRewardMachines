@@ -17,7 +17,8 @@ import torch
 from solve import DQN, obs_to_state, device
 from RL.Env.Environment import GridWorldEnv
 
-import utils
+from utils.DirectoryManager import DirectoryManager
+from LTL_tasks import formulas
 
 def print_sample_execution(env: GridWorldEnv, model: DQN, max_steps: int):
     obs, _, _ = env.reset()
@@ -108,29 +109,32 @@ def evaluate(model_path: str, out_csv: str, runs: int, episodes: int, max_steps:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("model", help="path to saved model .pth")
-    p.add_argument("--out", default="eval_results.csv", help="output CSV file")
+    p.add_argument("timestamp", help="timestamp of the experiment to evaluate")
+    p.add_argument("--model", help="path to saved model .pth")
     p.add_argument("--runs", type=int, default=1, help="number of independent runs")
-    p.add_argument("--episodes", type=int, help="episodes per run")
-    p.add_argument("--max_steps", type=int, default=100, help="max steps per episode")
+    p.add_argument("--episodes", type=int, default= 10, help="episodes per run")
+    p.add_argument("--max_steps", type=int, default=50, help="max steps per episode")
     p.add_argument("--size", type=int, default=4)
     p.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic")
     p.add_argument("--use_dfa", action="store_true", default=True)
-    p.add_argument("--formula", nargs=3)
     args = p.parse_args()
 
-    # Set formula.
-    args.formula = utils.formula 
-    args.episodes = 1000 if args.episodes is None else args.episodes
-
-    args.out = utils.get_eval_folder(args.model) + args.out
-    env_kwargs = dict(
-        formula=(args.formula[0], int(args.formula[1]), args.formula[2]),
-        render_mode="rgb_array",
-        state_type=args.state_type,
-        use_dfa_state=args.use_dfa,
-        train=False,
-        size=args.size,
-    )
-
-    evaluate(args.model, args.out, args.runs, args.episodes, args.max_steps, env_kwargs)
+    timestamp = args.timestamp
+    dm = DirectoryManager(timestamp)
+    for formula_name in dm.get_formula_names():
+        print(f"Found formula: {formula_name}")
+        for formula in formulas:
+            if formula[2].replace(" ", "_") == formula_name:
+                env_kwargs = dict(
+                    formula=formula,
+                    render_mode="rgb_array",
+                    state_type=args.state_type,
+                    use_dfa_state=args.use_dfa,
+                    train=False,
+                    size=args.size,
+                )
+                dm.set_formula_name(formula_name)
+                for model_path in dm.get_models():
+                    print(f"Evaluating model: {model_path}")
+                    out = f"data/{timestamp}/{formula_name}/eval/eval_{model_path.stem}.csv"
+                    evaluate(str(model_path), out, args.runs, args.episodes, args.max_steps, env_kwargs)
