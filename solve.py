@@ -351,7 +351,7 @@ if __name__ == "__main__":
     # Parse arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("--episodes", type=int, default=10000)
-    parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument("--runs", type=int, default=10)
     parser.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic")
     parser.add_argument("--use_dfa", action="store_true", default=True)
     args = parser.parse_args()
