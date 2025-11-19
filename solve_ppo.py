@@ -13,10 +13,12 @@ import time
 from RL.Env.Environment import GridWorldEnv
 from utils.DirectoryManager import DirectoryManager
 from matplotlib import pyplot as plt
-
+from LTL_tasks import formulas
 dm = DirectoryManager()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+RUN = 1  # Global variable for current run number
 
 class ActorCritic(nn.Module):
     """Actor-Critic network for PPO."""
@@ -233,15 +235,15 @@ def stack_states(states_list, env: GridWorldEnv):
         return torch.stack([s for s in states_list]).to(device)
 
 
-def train_ppo(env: GridWorldEnv, episodes=1000000, n_steps=512, batch_size=64,
-              n_epochs=4, gamma=0.99, gae_lambda=0.95, clip_epsilon=0.2,
+def train_ppo(env: GridWorldEnv, episodes=10000, n_steps=256, batch_size=128,
+              n_epochs=6, gamma=0.99, gae_lambda=0.95, clip_epsilon=0.2,
               lr=3e-4, vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5,
               max_steps_per_episode=200):
     """Train PPO agent in the given environment."""
 
     early_stop = False
     count = 0
-    early_stop_percentage = episodes / 5 # 20% of total episodes
+    early_stop_percentage = int(episodes / 10)  # 10% of total episodes
 
     model = ActorCritic(env).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -249,15 +251,15 @@ def train_ppo(env: GridWorldEnv, episodes=1000000, n_steps=512, batch_size=64,
     buffer = RolloutBuffer()
 
     model_folder = dm.get_model_folder()
-    model_name = "PPO.pth"
+    model_name = f"PPO_{RUN}.pth"
     model_file = model_folder + model_name
-    log_name = "training_PPO.csv"
+    log_name = f"training_PPO_{RUN}.csv"
     log_folder = dm.get_log_folder()
     log_file = log_folder + log_name
 
     # Write CSV header
     with open(log_file, "w") as logf:
-        logf.write("episode,total_steps,episode_reward,episode_length,value_loss,policy_loss,entropy\n")
+        logf.write("episode,total_steps,episode_reward,episode_length,done,truncate,value_loss,policy_loss,entropy\n")
 
     episode = 0
     total_steps = 0
@@ -318,18 +320,18 @@ def train_ppo(env: GridWorldEnv, episodes=1000000, n_steps=512, batch_size=64,
                 rewards.append(episode_reward)
 
                 # Log episode
-                if episode % (episodes / 100) == 0:
-                    print(f"Episode {episode:4d} | steps {total_steps:6d} | "
-                          f"reward {episode_reward:.2f} | length {episode_length:3d}")
-                    
-                    plt.plot(rewards)
+                if episode % (episodes / 10) == 0:
+                #     print(f"Episode {episode:4d} | steps {total_steps:6d} | "
+                #           f"reward {episode_reward:.2f} | length {episode_length:3d}")
+                    window_size = int(episode / 100)
+                    plt.plot(np.convolve(rewards, np.ones((window_size,))/window_size, mode='valid'))
                     plt.xlabel('Episodes')
                     plt.ylabel('Rewards')
                     plt.title('Rewards over Episodes')
-                    plt.savefig(model_folder + f'training_rewards{plot_n}.png')
+                    plt.savefig(model_folder + f'training_rewards_{RUN}.png')
                     plt.clf()
-                    rewards = []
-                    plot_n += 1
+                    # rewards = []
+                    # plot_n += 1
 
                 # If we've collected enough steps or reached episode limit, break to train
                 if len(buffer) >= batch_size or episode >= episodes:
@@ -434,6 +436,7 @@ def train_ppo(env: GridWorldEnv, episodes=1000000, n_steps=512, batch_size=64,
         # Log to file for last episode in this rollout
         with open(log_file, "a") as logf:
             logf.write(f"{episode},{total_steps},{episode_reward:.2f},{episode_length},"
+                       f"{1 if done else 0},{1 if truncated else 0},"
                       f"{avg_value_loss:.4f},{avg_policy_loss:.4f},{avg_entropy:.4f}\n")
 
         # Clear buffer for next rollout
@@ -447,6 +450,7 @@ def train_ppo(env: GridWorldEnv, episodes=1000000, n_steps=512, batch_size=64,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train PPO agent on GridWorld environment")
     parser.add_argument("--episodes", type=int, default=10000, help="Number of episodes to train")
+    parser.add_argument("--runs", type=int, default=3, help="Experiment runs per formula")
     parser.add_argument("--size", type=int, default=4, help="Grid size")
     parser.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic",
                        help="State representation type")
@@ -454,23 +458,26 @@ if __name__ == "__main__":
                        help="Use DFA state in observation")
     args = parser.parse_args()
 
+    runs = args.runs
 
-    # Sample formula.
-    formula = ("(F c0) & (F c1) & (F c2)", 3, "task2: visit(pickaxe, lava, door)")
+    for formula in formulas:
+        print(f"Training PPO for formula: {formula[2]}")
 
-    dm.set_formula_name(formula[2].replace(" ", "_"))
+        dm.set_formula_name(formula[2].replace(" ", "_"))
 
-    # Create environment
-    env = GridWorldEnv(
-        formula=formula,
-        render_mode="human",
-        state_type=args.state_type,
-        use_dfa_state=args.use_dfa,
-        train=True,
-        size=args.size
-    )
-
-    # Train PPO
-    train_ppo(
-        env,
-    )
+        # Create environment
+        env = GridWorldEnv(
+            formula=formula,
+            render_mode="human",
+            state_type=args.state_type,
+            use_dfa_state=args.use_dfa,
+            train=True,
+            size=args.size
+        )
+        for r in range(runs):
+            RUN = r + 1
+            print(f"Run: {RUN}")
+            # Train PPO
+            train_ppo(
+                env,
+            )
