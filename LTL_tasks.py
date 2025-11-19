@@ -17,3 +17,5 @@ formulas.append(("F(c0 & F(c1)) & G (! c2) & G(! c3)", 4, "task10: seq_visit({0}
 
 # Sample formula.
 formula = ("(F c0) & (F c1)", 2, "task0: visit(pickaxe, lava)")
+formula1 = ("F(c0 & F(c1)) & (F c2) & (F c3)", 4, "task6: seq_visit(pickaxe, lava) + visit(door, gem)")
+formula2 = ("(F c0) & (F c1) & (F c2)", 3, "task2: visit(pickaxe, lava, door)")
