@@ -26,6 +26,11 @@ class DirectoryManager:
         self.timestamp = timestamp
         self.experiment_folder = out_folder + self.timestamp + "/"
 
+    def get_experiment_folder(self) -> str:
+        """Get the experiment folder path and ensure it exists."""
+        Path(self.experiment_folder).mkdir(parents=True, exist_ok=True)
+        return self.experiment_folder
+
     def set_formula_name(self, formula_name: str):
         """Set the formula name and task folder."""
         self.formula_name = formula_name.replace(" ", "_")
