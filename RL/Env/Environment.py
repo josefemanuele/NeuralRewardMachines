@@ -1,5 +1,5 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import pygame
 import random
 import numpy as np
@@ -17,12 +17,11 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, formula, render_mode="human", state_type = "symbolic", use_dfa_state=True, train=True, size=4):
         self.dictionary_symbols = ['P', 'L', 'D', 'G', 'E' ]
-        self._PICKAXE = "RL/Env/imgs/pickaxe.png"
-        self._GEM = "RL/Env/imgs/gem.png"
-        self._DOOR = "RL/Env/imgs/door.png"
-        self._ROBOT = "RL/Env/imgs/robot.png"
-        self._LAVA = "RL/Env/imgs/lava.jpg"
-
+        self._PICKAXE = "NeuralRewardMachines/RL/Env/imgs/pickaxe.png"
+        self._GEM = "NeuralRewardMachines/RL/Env/imgs/gem.png"
+        self._DOOR = "NeuralRewardMachines/RL/Env/imgs/door.png"
+        self._ROBOT = "NeuralRewardMachines/RL/Env/imgs/robot.png"
+        self._LAVA = "NeuralRewardMachines/RL/Env/imgs/lava.jpg"
         # Tell if we are training
         self._train = train
         self.use_dfa_state = use_dfa_state
@@ -50,10 +49,12 @@ class GridWorldEnv(gym.Env):
         self.rew_dictionary = {}
         for idx, reward in enumerate(self.list_rew):
             self.rew_dictionary[reward]=idx
+            self.max_reward_idx = idx
 
         self.task = self.formula[2]
 
         self.action_space = spaces.Discrete(4)
+        self.observation_space = spaces.MultiDiscrete([self.size, self.size] + [self.automaton.num_of_states]) if self.use_dfa_state else spaces.MultiDiscrete([self.size, self.size])
         if state_type == "symbolic":
             self.state_space_size = 2
         elif state_type == "image":
@@ -100,9 +101,10 @@ class GridWorldEnv(gym.Env):
                 for c in range(size):
                     norm_img = (self.image_locations[r,c] - mean) / (stdev + 1e-5)
                     self.image_locations[r,c] = norm_img
+            
 
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         '''
         TUTTO IL RESET
         '''
@@ -132,6 +134,9 @@ class GridWorldEnv(gym.Env):
         info = self.rew_dictionary[reward]
 
         return observation, reward, info
+    
+    def _reset(self):
+        return self.reset()
 
     # Hardcode symbol to values.
     def _current_symbol(self):
@@ -206,6 +211,9 @@ class GridWorldEnv(gym.Env):
         info = self._get_info(potential)
 
         return observation, reward, done, truncated, info#, sym
+    
+    def is_final_info(self, info):
+        return info == self.max_reward_idx
 
     # if self.render_mode == "human": (?)
     def render(self):
