@@ -3,7 +3,7 @@ formulas = []
 items = ['pickaxe', 'lava', 'door', 'gem', 'empty' ]
 
 #PATTERNS INSPIRED FROM LTL2action
-# Formulas have patter LTL, number of different items, textual description
+# Formulas have pattern LTL, number of different items, textual description
 formulas.append(("(F c0) & (F c1)", 2, "task1: visit({0}, {1})".format(*items)))
 formulas.append(("(F c0) & (F c1) & (F c2)", 3, "task2: visit({0}, {1}, {2})".format(*items)))
 formulas.append(("F(c0 & F(c1))", 2, "task3: seq_visit({0}, {1})".format(*items)))
@@ -15,7 +15,34 @@ formulas.append(("(F c0) & (F c1) & (G (! c2)) & (G(! c3))", 4, "task8: visit({0
 formulas.append(("F(c0 & F(c1)) & G (! c2)", 3, "task9: seq_visit({0}, {1}) + glob_av({2})".format(*items)))
 formulas.append(("F(c0 & F(c1)) & G (! c2) & G(! c3)", 4, "task10: seq_visit({0}, {1}) + glob_av({2}) + glob_av({3})".format(*items)))
 
+# Utterances corresponding to the formulas.
+utterances = []
+utterances.append("Pick the pickaxe and pick the lava.")
+utterances.append("Pick the pickaxe, the lava, and the door.")
+utterances.append("First pick the pickaxe, then pick the lava.")
+utterances.append("First pick the pickaxe, then pick the lava. After that, first pick the door, then pick the gem.")
+utterances.append("First pick the pickaxe, then pick the lava. Also, pick the door.")
+utterances.append("First pick the pickaxe, then pick the lava. Also, pick the door and the gem.")
+utterances.append("Pick the pickaxe and the lava, but never touch the door.")
+utterances.append("Pick the pickaxe and the lava, but never touch the door and the gem.")
+utterances.append("First pick the pickaxe, then pick the lava. Make sure to avoid the door.")
+utterances.append("First pick the pickaxe, then pick the lava. Make sure to avoid the door and the gem.")
+
+# LTLs obtained by prompting the LLM.
+ltls = []
+ltls.append("F c0 & F c1")
+ltls.append("F(c0 & F(c1 & F(c2)))")
+ltls.append("F(c0 & F(c1))")
+ltls.append("F(c0 & F(c1 & F(c2 & F(c3))))")
+ltls.append("F(c0 & F(c1)) & F(c2)")
+ltls.append("F(c0 & F(c1)) & F(c2) & F(c3)")
+ltls.append("F(c0 & F c1) & G(!c2)")
+ltls.append("F(c0 & F c1) & G(!c2 & !c3)")
+ltls.append("F(c0 & F(c1)) & G(!c2)")
+ltls.append("F(c0 & F(c1)) & G(!c2 & !c3)")
+
 # Sample formula.
 formula = ("(F c0) & (F c1)", 2, "task0: visit(pickaxe, lava)")
 formula1 = ("F(c0 & F(c1)) & (F c2) & (F c3)", 4, "task6: seq_visit(pickaxe, lava) + visit(door, gem)")
 formula2 = ("(F c0) & (F c1) & (F c2)", 3, "task2: visit(pickaxe, lava, door)")
+formula10 = ("F(c0 & F(c1)) & G (! c2) & G(! c3)", 4, "task10: seq_visit(pickaxe, lava) + glob_av(door) + glob_av(gem)")
