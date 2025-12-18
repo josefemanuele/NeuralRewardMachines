@@ -31,14 +31,14 @@ class DFA:
       ltl_formula_parsed = parser(ltl_formula)
       dfa = ltl_formula_parsed.to_automaton()
       # print the automaton
-      graph = dfa.to_graphviz()
-      graph.render("data/symbolicDFAs/"+formula_name)
+    #   graph = dfa.to_graphviz()
+    #   graph.render("data/symbolicDFAs/"+formula_name)
 
       #From symbolic DFA to simple DFA
-      print("DFA dict:", dfa.__dict__)
+      # print("DFA dict:", dfa.__dict__)
       self.alphabet = ["c" + str(i) for i in range(num_symbols)]
       self.transitions = self.reduce_dfa(dfa)
-      print("Transitions: ", self.transitions)
+      # print("Transitions: ", self.transitions)
       self.num_of_states = len(self.transitions)
       self.acceptance = []
       for s in range(self.num_of_states):
@@ -46,7 +46,7 @@ class DFA:
               self.acceptance.append(True)
           else:
               self.acceptance.append(False)
-      print("Acceptance: ", self.acceptance)
+      # print("Acceptance: ", self.acceptance)
 
       #Complete the transition function with the symbols of the environment that ARE NOT in the formula
       self.num_of_symbols = len(dictionary_symbols)
