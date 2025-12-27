@@ -233,7 +233,7 @@ def train(env: GridWorldEnv, episodes=10000, batch_size=64, gamma=0.99, lr=1e-4,
                     with torch.no_grad():
                         next_q = target(next_states_t)
                         next_q_max = next_q.max(1)[0].unsqueeze(1)
-                        target_q = rewards_t + (1.0 - dones_t) * gamma * next_q_max
+                        target_q = rewards_t + (1.0 - dones_t) * gamma * next_q_max # dones?? TODO: check.
 
                     loss = F.mse_loss(q_values, target_q)
                     optimizer.zero_grad()
