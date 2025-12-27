@@ -79,7 +79,8 @@ class GridWorldEnv(gym.Env):
 
         self._gem_display = True
         self._pickaxe_display = True
-        self._robot_display = False if self._train else True
+        # self._robot_display = False if self._train else True
+        self._robot_display = True
 
         if state_type == "image":
             self.image_locations = {}
