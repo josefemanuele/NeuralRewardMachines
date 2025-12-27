@@ -14,10 +14,9 @@ from RL.Env.Environment import GridWorldEnv
 from utils.DirectoryManager import DirectoryManager
 from matplotlib import pyplot as plt
 from LTL_tasks import formulas
+
 dm = DirectoryManager()
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 RUN = 1  # Global variable for current run number
 
 class ActorCritic(nn.Module):
@@ -26,7 +25,6 @@ class ActorCritic(nn.Module):
         super().__init__()
         self.state_type = env.state_type
         self.use_dfa = env.use_dfa_state
-
         if self.state_type == "image":
             # CNN to extract features from 3x64x64 images
             self.cnn = nn.Sequential(
@@ -67,10 +65,8 @@ class ActorCritic(nn.Module):
                 nn.Linear(hidden, hidden),
                 nn.ReLU(),
             )
-
         # Actor head (policy)
         self.actor = nn.Linear(hidden, env.action_space.n)
-
         # Critic head (value function)
         self.critic = nn.Linear(hidden, 1)
 
@@ -106,11 +102,9 @@ class ActorCritic(nn.Module):
             x = state.to(device).float()
             if x.dim() == 1:
                 x = x.unsqueeze(0)
-
         features = self.shared(x)
         logits = self.actor(features)
         value = self.critic(features)
-
         return logits, value
 
     def get_action_and_value(self, state):
@@ -125,7 +119,6 @@ class ActorCritic(nn.Module):
         # print(f"State: {state} | probs: {probs} | action: {action.item()} | value: {value.item():.2f} | log_prob: {log_prob.item():.2f} | entropy: {entropy.item():.2f}")
 
         return action.item(), log_prob.item(), value.item(), entropy.item()
-
 
 def obs_to_state(obs, env: GridWorldEnv):
     """Convert environment observation to tensor format."""
@@ -201,24 +194,19 @@ def compute_gae(rewards, values, dones, truncateds, next_value, gamma=0.99, gae_
     """Compute Generalized Advantage Estimation (GAE)."""
     advantages = []
     gae = 0
-
     # Add next_value to values list for computation
     values = values + [next_value]
-
     for t in reversed(range(len(rewards))):
-        next_non_terminal = 1.0 - (dones[t])
+        next_non_terminal = 1.0 - (dones[t] or truncateds[t])
+        # next_non_terminal = 1.0 - (dones[t])
         next_value_t = values[t + 1]
-
         # TD error: delta = r + gamma * V(s') - V(s)
         delta = rewards[t] + gamma * next_value_t * next_non_terminal - values[t]
-
         # GAE: A = delta + gamma * lambda * A'
         gae = delta + gamma * gae_lambda * next_non_terminal * gae
         advantages.insert(0, gae)
-
     # Returns are advantages + values
     returns = [adv + val for adv, val in zip(advantages, values[:-1])]
-
     return advantages, returns
 
 
@@ -235,95 +223,66 @@ def stack_states(states_list, env: GridWorldEnv):
         return torch.stack([s for s in states_list]).to(device)
 
 
-def train_ppo(env: GridWorldEnv, episodes=10000, n_steps=256, batch_size=128,
-              n_epochs=6, gamma=0.99, gae_lambda=0.95, clip_epsilon=0.2,
-              lr=3e-4, vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5,
-              max_steps_per_episode=200):
+def train_ppo(env: GridWorldEnv, hidden=128,
+              episodes=10_000, steps=256, minibatch_size=64, epochs=4, 
+              gamma=0.99, gae_lambda=0.95, clip_epsilon=0.2, lr=3e-4, 
+              vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5):
     """Train PPO agent in the given environment."""
-
-    early_stop = False
-    count = 0
-    early_stop_percentage = int(episodes / 10)  # 10% of total episodes
-
-    model = ActorCritic(env).to(device)
+    # TODO: Implement a better early stop strategy
+    model = ActorCritic(env, hidden=hidden).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
-
     buffer = RolloutBuffer()
-
     model_folder = dm.get_model_folder()
     model_name = f"PPO_{RUN}.pth"
     model_file = model_folder + model_name
     log_name = f"training_PPO_{RUN}.csv"
     log_folder = dm.get_log_folder()
     log_file = log_folder + log_name
-
     # Write CSV header
     with open(log_file, "w") as logf:
         logf.write("episode,total_steps,episode_reward,episode_length,done,truncate,value_loss,policy_loss,entropy\n")
-
     episode = 0
     total_steps = 0
     rewards = []
     plot_n = 0
-
     print(f"Training PPO on {device}")
-    print(f"Episodes: {episodes}, Steps per rollout: {n_steps}")
-
-    while (episode < episodes) and (not early_stop):
-        # Collect rollout
+    print(f"Episodes: {episodes}, Steps per rollout: {steps}")
+    # Train
+    while episode < episodes:
         obs, _, _ = env.reset()
         state = obs_to_state(obs, env)
         episode_reward = 0.0
         episode_length = 0
         done = False
         truncated = False
-
-
-        for step in range(n_steps):
+        # Collect rollout
+        for step in range(steps):
             if done or truncated:
                 # Start new episode
                 obs, _, _ = env.reset()
                 state = obs_to_state(obs, env)
                 episode_reward = 0.0
                 episode_length = 0
-
             with torch.no_grad():
                 action, log_prob, value, _ = model.get_action_and_value(state)
-
             # Take action in environment
             next_obs, reward, done, truncated, _ = env.step(action)
             episode_reward += reward
             episode_length += 1
             total_steps += 1
-
             # Store transition
             buffer.push(state, action, reward, log_prob, value, done, truncated)
-
-            # print(f"Ep: {episode} | Step: {step} | Reward: {reward:.2f} | Done: {done}")
             # Update state
             next_state = obs_to_state(next_obs, env)
             state = next_state
-
-            # if done:
-            #     print(f"Episode {episode} finished after {episode_length} steps with reward {episode_reward:.2f}")
-
-            count = count + 1 if done else 0
-            if count >= early_stop_percentage:
-                print(f"Early stopping training due to {count} consecutive episode completions.")    
-                early_stop = True
-                break
-
             # Check if episode ended
             if done or truncated:
                 episode += 1
-
                 rewards.append(episode_reward)
-
                 # Log episode
                 if episode % (episodes / 10) == 0:
-                #     print(f"Episode {episode:4d} | steps {total_steps:6d} | "
-                #           f"reward {episode_reward:.2f} | length {episode_length:3d}")
-                    window_size = int(episode / 100)
+                    print(f"Episode: {episode:4d} reward: {episode_reward:.2f} length: {episode_length:3d}")
+                    window_size = 100
                     plt.plot(np.convolve(rewards, np.ones((window_size,))/window_size, mode='valid'))
                     plt.xlabel('Episodes')
                     plt.ylabel('Rewards')
@@ -332,152 +291,142 @@ def train_ppo(env: GridWorldEnv, episodes=10000, n_steps=256, batch_size=128,
                     plt.clf()
                     # rewards = []
                     # plot_n += 1
-
-                # If we've collected enough steps or reached episode limit, break to train
-                if len(buffer) >= batch_size or episode >= episodes:
-                #     print(f"Collected {len(buffer)} steps, proceeding to update.")
-                    break 
-
-
+                # # If we've collected enough steps or reached episode limit, break to train
+                # if len(buffer) >= minibatch_size or episode >= episodes:
+                # #     print(f"Collected {len(buffer)} steps, proceeding to update.")
+                #     break 
         # If buffer is empty or we've finished all episodes, continue
         if len(buffer) == 0 or episode >= episodes:
             break
-
-        # print(f"Updating policy at episode {episode}, total steps {total_steps}")
-        # print(f"Buffer: {buffer}")
-
         # Compute advantages and returns
         with torch.no_grad():
             _, next_value = model.forward(state)
             next_value = next_value.item()
-
         advantages, returns = compute_gae(
             buffer.rewards, buffer.values, buffer.dones, buffer.truncateds,
             next_value, gamma, gae_lambda
         )
-
         # Convert to tensors
         advantages_t = torch.tensor(advantages, dtype=torch.float32, device=device)
         returns_t = torch.tensor(returns, dtype=torch.float32, device=device)
         old_log_probs_t = torch.tensor(buffer.log_probs, dtype=torch.float32, device=device)
-
         # Normalize advantages
         advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
-
         # Prepare batch data
         states_batch = buffer.states
         actions_batch = torch.tensor(buffer.actions, dtype=torch.long, device=device)
-
         # PPO update for n_epochs
         total_policy_loss = 0
         total_value_loss = 0
         total_entropy = 0
         n_updates = 0
-
-        for epoch in range(n_epochs):
+        for epoch in range(epochs):
             # Shuffle indices
             indices = np.arange(len(buffer))
             np.random.shuffle(indices)
-
             # Mini-batch updates
-            for start in range(0, len(buffer), batch_size):
-                end = min(start + batch_size, len(buffer))
+            for start in range(0, len(buffer), minibatch_size):
+                end = min(start + minibatch_size, len(buffer))
                 batch_indices = indices[start:end]
-
                 # Get batch data
                 batch_states = [states_batch[i] for i in batch_indices]
                 batch_actions = actions_batch[batch_indices]
                 batch_old_log_probs = old_log_probs_t[batch_indices]
                 batch_advantages = advantages_t[batch_indices]
                 batch_returns = returns_t[batch_indices]
-
                 # Forward pass
                 states_stacked = stack_states(batch_states, env)
                 logits, values = model.forward(states_stacked)
-
                 # Compute policy loss
                 probs = F.softmax(logits, dim=-1)
                 dist = Categorical(probs)
                 new_log_probs = dist.log_prob(batch_actions)
                 entropy = dist.entropy().mean()
-
                 # Ratio for PPO
                 ratio = torch.exp(new_log_probs - batch_old_log_probs)
-
                 # Clipped surrogate objective
                 surr1 = ratio * batch_advantages
                 surr2 = torch.clamp(ratio, 1.0 - clip_epsilon, 1.0 + clip_epsilon) * batch_advantages
                 policy_loss = -torch.min(surr1, surr2).mean()
-
                 # Value loss
                 values = values.squeeze(-1)
                 value_loss = F.mse_loss(values, batch_returns)
-
                 # Total loss
+                # policy loss 0.5
+                # value loss 1
                 loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
-
                 # Optimize
                 optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
                 optimizer.step()
-
                 total_policy_loss += policy_loss.item()
                 total_value_loss += value_loss.item()
                 total_entropy += entropy.item()
                 n_updates += 1
-        # time.sleep(10)
-
         # Log metrics
         avg_policy_loss = total_policy_loss / n_updates if n_updates > 0 else 0
         avg_value_loss = total_value_loss / n_updates if n_updates > 0 else 0
         avg_entropy = total_entropy / n_updates if n_updates > 0 else 0
-
         # Log to file for last episode in this rollout
         with open(log_file, "a") as logf:
             logf.write(f"{episode},{total_steps},{episode_reward:.2f},{episode_length},"
                        f"{1 if done else 0},{1 if truncated else 0},"
                       f"{avg_value_loss:.4f},{avg_policy_loss:.4f},{avg_entropy:.4f}\n")
-
         # Clear buffer for next rollout
         buffer.clear()
-
     # Save model
     torch.save(model.state_dict(), model_file)
     print(f"\nTraining completed! Model saved to {model_file}")
 
+def set_seed(seed: int):
+    """Set random seed for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train PPO agent on GridWorld environment")
-    parser.add_argument("--episodes", type=int, default=10000, help="Number of episodes to train")
+    parser.add_argument("--formulas", type=int, default=10, help="Number of formulas to consider from LTL_tasks")
     parser.add_argument("--runs", type=int, default=3, help="Experiment runs per formula")
-    parser.add_argument("--size", type=int, default=4, help="Grid size")
-    parser.add_argument("--state_type", choices=["symbolic", "image"], default="symbolic",
-                       help="State representation type")
-    parser.add_argument("--use_dfa", action="store_true", default=True,
-                       help="Use DFA state in observation")
+    parser.add_argument("--hidden", type=int, default=128, help="Hidden layer size for the model")
+    parser.add_argument("--episodes", type=int, default=10_000, help="Number of episodes to train")
+    parser.add_argument("--steps", type=int, default=256, help="Number of steps per rollout")
+    parser.add_argument("--minibatch_size", type=int, default=64, help="Minibatch size for PPO updates")
+    parser.add_argument("--epochs", type=int, default=4, help="Number of epochs per rollout")
+    parser.add_argument("--clip_epsilon", type=float, default=0.2, help="Clipping epsilon for PPO")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate for optimizer")
+    parser.add_argument("--vf_coef", type=float, default=0.5, help="Value function loss coefficient")
+    parser.add_argument("--ent_coef", type=float, default=0.01, help="Entropy loss coefficient")
+    parser.add_argument("--max_grad_norm", type=float, default=0.5, help="Maximum gradient norm for clipping")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
     args = parser.parse_args()
-
+    n_formulas = args.formulas
     runs = args.runs
-
+    hidden = args.hidden
+    episodes = args.episodes
+    steps = args.steps
+    minibatch_size = args.minibatch_size
+    epochs = args.epochs
+    clip_epsilon = args.clip_epsilon
+    lr = args.lr
+    vf_coef = args.vf_coef
+    ent_coef = args.ent_coef
+    max_grad_norm = args.max_grad_norm
+    seed = args.seed
+    set_seed(seed)
+    formulas = formulas[:n_formulas]
     for formula in formulas:
-        print(f"Training PPO for formula: {formula[2]}")
-
+        print(f"Running experiments for: {formula[2]}")
         dm.set_formula_name(formula[2].replace(" ", "_"))
-
         # Create environment
-        env = GridWorldEnv(
-            formula=formula,
-            render_mode="human",
-            state_type=args.state_type,
-            use_dfa_state=args.use_dfa,
-            train=True,
-            size=args.size
-        )
+        env = GridWorldEnv(formula)
         for r in range(runs):
+            print(f" Experiment {r+1} / {runs}")
             RUN = r + 1
-            print(f"Run: {RUN}")
             # Train PPO
-            train_ppo(
-                env,
-            )
+            train_ppo(env, hidden=hidden, episodes=episodes, steps=steps, minibatch_size=minibatch_size, 
+                      epochs=epochs, clip_epsilon=clip_epsilon, lr=lr, vf_coef=vf_coef, 
+                      ent_coef=ent_coef, max_grad_norm=max_grad_norm)
