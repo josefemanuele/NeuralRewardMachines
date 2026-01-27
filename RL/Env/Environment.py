@@ -5,6 +5,7 @@ import random
 import numpy as np
 import torch, torchvision
 from .FiniteStateMachine import MooreMachine
+import pickle
 
 resize = torchvision.transforms.Resize((64,64))
 transforms = torchvision.transforms.Compose([
@@ -15,7 +16,7 @@ transforms = torchvision.transforms.Compose([
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, formula, render_mode="human", state_type = "symbolic", use_dfa_state=True, train=True, size=4):
+    def __init__(self, formula, render_mode="human", state_type = "symbolic", use_dfa_state=True, train=True, size=4, recompute_image_pkl=False):
         self.dictionary_symbols = ['P', 'L', 'D', 'G', 'E' ]
         self._PICKAXE = "NeuralRewardMachines/RL/Env/imgs/pickaxe.png"
         self._GEM = "NeuralRewardMachines/RL/Env/imgs/gem.png"
@@ -83,25 +84,34 @@ class GridWorldEnv(gym.Env):
         self._robot_display = True
 
         if state_type == "image":
-            self.image_locations = {}
-            for r in range(size):
-                for c in range(size):
-                    self._agent_location = np.array([r, c])
-                    self._render_frame()
-                    obss = self._get_obs(1)
-                    obss = torch.tensor(obss.copy(), dtype=torch.float64) / 255
-                    obss = torch.permute(obss, (2, 0, 1))
-                    obss = resize(obss)
-                    self.image_locations[r,c] = obss
-            #normalization
-            all_images = list(self.image_locations.values())
-            all_img_tens = torch.stack(all_images)
-            stdev, mean = torch.std_mean(all_img_tens, dim=0)
+            if recompute_image_pkl:
+                self.image_locations = {}
+                for r in range(size):
+                    for c in range(size):
+                        self._agent_location = np.array([r, c])
+                        self._render_frame()
+                        obss = self._get_obs(1)
+                        obss = torch.tensor(obss.copy(), dtype=torch.float64) / 255
+                        obss = torch.permute(obss, (2, 0, 1))
+                        obss = resize(obss)
+                        self.image_locations[r,c] = obss
+                #normalization
+                all_images = list(self.image_locations.values())
+                all_img_tens = torch.stack(all_images)
+                stdev, mean = torch.std_mean(all_img_tens, dim=0)
 
-            for r in range(size):
-                for c in range(size):
-                    norm_img = (self.image_locations[r,c] - mean) / (stdev + 1e-5)
-                    self.image_locations[r,c] = norm_img
+                for r in range(size):
+                    for c in range(size):
+                        norm_img = (self.image_locations[r,c] - mean) / (stdev + 1e-5)
+                        self.image_locations[r,c] = norm_img
+                # Store image_locations as a pkl
+                data = self.image_locations
+                with open('data/image_locations.pkl', 'wb') as handle:
+                    pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            else:
+                with open('data/image_locations.pkl', 'rb') as handle:
+                    self.image_locations = pickle.load(handle)
+
             
 
 
