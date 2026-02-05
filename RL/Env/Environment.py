@@ -40,10 +40,10 @@ class GridWorldEnv(gym.Env):
         self.clock = None
         self.formula = formula
         # Creating MooreMachine with LTL formula str, number of symbols int, textual description str
-        self.automaton = MooreMachine(self.formula[0], self.formula[1], self.formula[2], dictionary_symbols=self.dictionary_symbols)
+        self.automaton = MooreMachine(self.formula[0], self.formula[1], self.formula[2] + self.formula[0], dictionary_symbols=self.dictionary_symbols)
 
         self.max_reward = 100 
-        print("MAXIMUM REWARD:", self.max_reward)
+        # print("MAXIMUM REWARD:", self.max_reward)
 
         self.set_for_dict = set(self.automaton.rewards)
         self.list_rew = sorted(self.set_for_dict)

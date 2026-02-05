@@ -17,16 +17,16 @@ formulas.append(("F(c0 & F(c1)) & G (! c2) & G(! c3)", 4, "task10: seq_visit({0}
 
 # Utterances corresponding to the formulas.
 utterances = []
-utterances.append("Pick the pickaxe and pick the lava.")
-utterances.append("Pick the pickaxe, the lava, and the door.")
-utterances.append("First pick the pickaxe, then pick the lava.")
-utterances.append("First pick the pickaxe, then pick the lava. After that, first pick the door, then pick the gem.")
-utterances.append("First pick the pickaxe, then pick the lava. Also, pick the door.")
-utterances.append("First pick the pickaxe, then pick the lava. Also, pick the door and the gem.")
-utterances.append("Pick the pickaxe and the lava, but never touch the door.")
-utterances.append("Pick the pickaxe and the lava, but never touch the door and the gem.")
-utterances.append("First pick the pickaxe, then pick the lava. Make sure to avoid the door.")
-utterances.append("First pick the pickaxe, then pick the lava. Make sure to avoid the door and the gem.")
+utterances.append("Visit the pickaxe and visit the lava.")
+utterances.append("Visit the pickaxe, the lava, and the door.")
+utterances.append("First visit the pickaxe, then visit the lava.")
+utterances.append("First visit the pickaxe, then visit the lava. After that, first visit the door, then visit the gem.")
+utterances.append("First visit the pickaxe, then visit the lava. Also, visit the door.")
+utterances.append("First visit the pickaxe, then visit the lava. Also, visit the door and the gem.")
+utterances.append("Visit the pickaxe and the lava, always avoid the door.")
+utterances.append("Visit the pickaxe and the lava, always avoid the door and the gem.")
+utterances.append("First visit the pickaxe, then visit the lava. Always avoid the door.")
+utterances.append("First visit the pickaxe, then visit the lava. Always avoid the door and the gem.")
 
 # LTLs obtained by prompting the LLM.
 ltls = []

@@ -25,20 +25,21 @@ class DFA:
 
 
   def init_from_ltl(self, ltl_formula, num_symbols, formula_name, dictionary_symbols):
-
+      print("Initializing DFA from LTL formula:", ltl_formula)
       #From LTL to DFA
       parser = LTLfParser()
       ltl_formula_parsed = parser(ltl_formula)
+      print("LTL formula parsed:", ltl_formula_parsed)
       dfa = ltl_formula_parsed.to_automaton()
       # print the automaton
     #   graph = dfa.to_graphviz()
     #   graph.render("data/symbolicDFAs/"+formula_name)
 
       #From symbolic DFA to simple DFA
-      # print("DFA dict:", dfa.__dict__)
+      print("DFA dict:", dfa.__dict__)
       self.alphabet = ["c" + str(i) for i in range(num_symbols)]
       self.transitions = self.reduce_dfa(dfa)
-      # print("Transitions: ", self.transitions)
+      print("Transitions: ", self.transitions)
       self.num_of_states = len(self.transitions)
       self.acceptance = []
       for s in range(self.num_of_states):
@@ -59,7 +60,7 @@ class DFA:
                   if sym not in self.transitions[s].keys():
                       self.transitions[s][sym] = s
       #print("Complete transition function")
-      #print("Complete transitions: ", self.transitions)
+    #   print("Complete transitions: ", self.transitions)
     #   self.write_dot_file("simpleDFAs/{}.dot".format(formula_name))
 
   # Reduce the DFA obtained from pythomata library to a simple DFA with integer-labeled transitions
@@ -176,10 +177,13 @@ class MooreMachine(DFA):
         # Define rewards for each state
         self.rewards = [100 for _ in range(self.num_of_states)]
         if reward == "distance":
+            if all(a for a in self.acceptance):
+                # All states are accepting
+                # No state to calulcate distance from
+                return
             for s in range(self.num_of_states):
                 if self.acceptance[s]:
                     self.rewards[s] = 0
-            #print(self.rewards)
             # Compute the minimum distance from each state to an accepting state
             old_rew = self.rewards.copy()
             termination = False
@@ -193,7 +197,7 @@ class MooreMachine(DFA):
 
                 termination = (str(self.rewards) == str(old_rew))
                 old_rew = self.rewards.copy()
-            #print("Distance from accepting states:", self.rewards)
+            # print("Distance from accepting states:", self.rewards)
             # Normalize rewards between 0 and 100 (0 for accepting states, 100 for the farthest)
             for i in range(len(self.rewards)):
                 self.rewards[i] *= -1
@@ -201,15 +205,20 @@ class MooreMachine(DFA):
             for i,r in enumerate(self.rewards):
                 if r != -100:
                     self.rewards[i] = (r - minimum)
-
-            maximum = max(self.rewards )
-            #max : 100 = rew : x
-            #x = 100 * rew / max
-            for i,r in enumerate(self.rewards):
-                if r != -100:
-                    self.rewards[i] = 100 * r/ maximum
-            print("REWARDS:", self.rewards)
-            #assert False
+            # print(f"self.rewards: {self.rewards}")
+            if max(self.rewards) == 0:
+                for i, r in enumerate(self.rewards):
+                    if r != -100:
+                        self.rewards[i] = 100
+            else:
+                maximum = max(self.rewards )
+                #max : 100 = rew : x
+                #x = 100 * rew / max
+                for i,r in enumerate(self.rewards):
+                    if r != -100:
+                        self.rewards[i] = 100 * r/ maximum
+                print("REWARDS:", self.rewards)
+                #assert False
 
         else:
             raise Exception("Reward based on '{}' NOT IMPLEMENTED".format(reward))
