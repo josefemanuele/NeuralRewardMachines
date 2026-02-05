@@ -177,13 +177,10 @@ class MooreMachine(DFA):
         # Define rewards for each state
         self.rewards = [100 for _ in range(self.num_of_states)]
         if reward == "distance":
-            if all(a for a in self.acceptance):
-                # All states are accepting
-                # No state to calulcate distance from
-                return
             for s in range(self.num_of_states):
                 if self.acceptance[s]:
                     self.rewards[s] = 0
+            #print(self.rewards)
             # Compute the minimum distance from each state to an accepting state
             old_rew = self.rewards.copy()
             termination = False
@@ -197,7 +194,7 @@ class MooreMachine(DFA):
 
                 termination = (str(self.rewards) == str(old_rew))
                 old_rew = self.rewards.copy()
-            # print("Distance from accepting states:", self.rewards)
+            #print("Distance from accepting states:", self.rewards)
             # Normalize rewards between 0 and 100 (0 for accepting states, 100 for the farthest)
             for i in range(len(self.rewards)):
                 self.rewards[i] *= -1
@@ -205,20 +202,15 @@ class MooreMachine(DFA):
             for i,r in enumerate(self.rewards):
                 if r != -100:
                     self.rewards[i] = (r - minimum)
-            # print(f"self.rewards: {self.rewards}")
-            if max(self.rewards) == 0:
-                for i, r in enumerate(self.rewards):
-                    if r != -100:
-                        self.rewards[i] = 100
-            else:
-                maximum = max(self.rewards )
-                #max : 100 = rew : x
-                #x = 100 * rew / max
-                for i,r in enumerate(self.rewards):
-                    if r != -100:
-                        self.rewards[i] = 100 * r/ maximum
-                print("REWARDS:", self.rewards)
-                #assert False
+
+            maximum = max(self.rewards )
+            #max : 100 = rew : x
+            #x = 100 * rew / max
+            for i,r in enumerate(self.rewards):
+                if r != -100:
+                    self.rewards[i] = 100 * r/ maximum
+            print("REWARDS:", self.rewards)
+            #assert False
 
         else:
             raise Exception("Reward based on '{}' NOT IMPLEMENTED".format(reward))
